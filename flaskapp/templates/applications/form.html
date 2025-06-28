@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>入力フォーム</title>
+</head>
+<body>
+    <h2>情報を入力してください</h2>
+    <form method="POST">
+        氏名: <input type="text" name="name"><br><br>
+        メール: <input type="email" name="email"><br><br>
+        <input type="submit" value="送信">
+    </form>
+
+    {% if name and email %}
+        <hr>
+        <p><strong>受信した氏名：</strong>{{ name }}</p>
+        <p><strong>受信したメール：</strong>{{ email }}</p>
+    {% endif %}
+</body>
+</html>

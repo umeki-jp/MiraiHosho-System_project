@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% set sidebar_enabled = false %}
+
+{% block title %}
+  {{ page_title | default("ページタイトル") }}
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    {% block top_right_button %}
+      {% endblock %}
+  </div>
+
+  {# ▼ タイトル行の下にメッセージ表示（flash対応版） #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {# カテゴリに応じて色を変える例 #}
+        {% if category == 'error' %}
+          <div class="alert alert-danger" style="color: #c62828; font-weight: bold; margin-bottom: 1rem;">
+            {{ message }}
+          </div>
+        {% else %}
+          <div class="alert alert-success" style="color: #1e88e5; font-weight: bold; margin-bottom: 1rem;">
+            {{ message }}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" class="form-main-content customer-form" >
+    <div class="form-action-btns mb-4">
+      {% block left_buttons %}
+        {% endblock %}
+    </div>
+    <div class="main-content-fields">
+      {% block main_content %}
+        {% endblock %}
+    </div>
+  </form>
+{% endblock %}

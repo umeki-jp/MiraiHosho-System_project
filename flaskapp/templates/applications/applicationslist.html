@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% set page_title = "申込一覧" %}
+
+
+{% import "ui/common_parts.html" as ui %}
+{% import "ui/search_buttons.html" as sc %}
+ 
+{% block content %}
+  <!-- タイトルと新規登録ボタンを中央縦並びで表示 -->
+  <div class="mb-4">
+    <a href="{{ url_for('applications.application_new') }}"
+       class="btn btn-primary new-btn"
+       target="_blank">
+      新規登録
+    </a>
+  </div>
+
+
+  <form method="get" class="search-form" style="margin-bottom: 20px;">
+    <div class="search-grid">
+      {{ ui.search_input("申込番号", "application_number", request.args.get("application_number", "")) }}
+      {{ ui.search_input("契約番号", "contract_number", request.args.get("contract_number", "")) }}
+      {{ ui.search_input("賃借人", "customer_name", request.args.get("customer_name", "")) }}
+      {{ ui.search_input("賃借人ｶﾅ", "customer_name_kana", request.args.get("customer_name_kana", ""),"半角入力") }}
+      {{ ui.search_input("物件名", "property_name", request.args.get("property_name", "")) }}
+      {{ ui.search_input("号室", "property_room_number", request.args.get("property_room_number", "")) }}
+      {{ ui.search_input("代理店", "current_agency_name", request.args.get("current_agency_name", "")) }}
+      {{ ui.search_input("集金方法", "collection_method", request.args.get("collection_method", "")) }}
+    </div>
+    <div class="search-grid">
+      <div class="search-item">
+        <label class="search-label">申込日</label>
+        <input type="date" name="application_start" value="{{ filters.application_start or '' }}" class="search-input">
+        <span>～</span>
+        <input type="date" name="application_end" value="{{ filters.application_end or '' }}" class="search-input">
+      </div>
+      <div class="search-item">
+        <label class="search-label">契約日</label>
+        <input type="date" name="contract_start" value="{{ filters.contract_start or '' }}" class="search-input">
+        <span>～</span>
+        <input type="date" name="contract_end" value="{{ filters.contract_end or '' }}" class="search-input">
+      </div>
+    </div>
+    {{ sc.search_buttons(
+      "/applications/applicationslist",
+      request.args.get("limit", "20"),
+      page,
+      total_pages,
+      total
+    ) }}
+  </form>
+
+  <div class="scrollable-table">
+    <table class="app-table">
+      <thead>
+        {% set th_list = [
+          '<th class="col-select">選択</th>',
+          '<th class="col-application">申込番号</th>',
+          '<th class="col-contract">契約番号</th>',
+          '<th class="col-status">契約状況</th>',
+          '<th class="col-customer">賃借人</th>',
+          '<th class="col-property">物件名称</th>',
+          '<th class="col-room">号室</th>',
+          '<th class="col-agency">代理店(現在)</th>',
+          '<th class="col-collection">集金方法</th>',
+          '<th class="col-psp">決済代行</th>',
+          '<th class="col-date">申込日</th>',
+          '<th class="col-date">契約日</th>',
+          '<th class="col-date">解約日</th>'
+        ] %}
+        <tr>
+          {{ th_list | join('\n') | safe }}
+        </tr>
+      </thead>
+      <tbody>
+        {% set colspan = th_list | length %}
+        {% if has_search %}
+          {% if applications %}
+            {% for row in applications %}
+              <tr>
+                <td class="col-select text-center">
+                  <a href="{{ url_for('applications.application_edit', application_number=row.application_number) }}" class="btn btn-sm btn-outline-primary" target="_blank">選択</a>
+                </td>
+                {{ ui.table_cell(row.application_number) }}
+                {{ ui.table_cell(row.contract_number) }}
+                {{ ui.table_cell(row.contract_status) }}
+                {{ ui.table_cell(row.customer_name) }}
+                {{ ui.table_cell(row.property_name) }}
+                {{ ui.table_cell(row.property_room_number) }}
+                {{ ui.table_cell(row.current_agency_name) }}
+                {{ ui.table_cell(row.collection_method) }}
+                {{ ui.table_cell(row.psp) }}
+                {{ ui.table_cell(row.application_date) }}
+                {{ ui.table_cell(row.contract_start_date) }}
+                {{ ui.table_cell(row.cancellation_date) }}
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="{{ colspan }}" style="text-align:center; color:#666;">
+                該当する申込はありません。
+              </td>
+            </tr>
+          {% endif %}
+        {% else %}
+          <tr>
+            <td colspan="{{ colspan }}" style="text-align:center; color:#999;">
+              検索条件を入力して「検索」してください。
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

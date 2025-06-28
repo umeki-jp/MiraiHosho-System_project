@@ -1,0 +1,35 @@
+<form method="post" class="application-form">
+  <div>
+    <label>申込番号</label>
+    <input type="text" name="application_number" value="{{ form_data.application_number if form_data else '' }}">
+  </div>
+  <div>
+    <label>契約番号</label>
+    <input type="text" name="contract_number" value="{{ form_data.contract_number or '' }}">
+  </div>
+  <div>
+    <label>賃借人</label>
+    <input type="text" name="customer_name" value="{{ form_data.customer_name or '' }}">
+  </div>
+  <div>
+    <label>物件名</label>
+    <input type="text" name="property_name" value="{{ form_data.property_name or '' }}">
+  </div>
+  <div>
+    <label>号室</label>
+    <input type="text" name="property_room_number" value="{{ form_data.property_room_number or '' }}">
+  </div>
+  <div>
+    <label>代理店</label>
+    <input type="text" name="current_agency_name" value="{{ form_data.current_agency_name or '' }}">
+  </div>
+  <div>
+    <label>集金方法</label>
+    <input type="text" name="collection_method" value="{{ form_data.collection_method or '' }}">
+  </div>
+
+  <div>
+    <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+    <a href="{{ url_for('applications.show_applications') }}" class="btn btn-secondary">戻る</a>
+  </div>
+</form>

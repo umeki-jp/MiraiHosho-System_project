@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% set page_title = "顧客一覧" %}
+
+{% block content %}
+
+  <!-- 上部：新規登録ボタン -->
+  <div class="mb-4 d-flex justify-content-end">
+    <a href="{{ url_for('customerlist.customer_new') }}"
+       class="btn btn-primary new-btn"
+       onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+      新規登録
+    </a>
+  </div>
+
+  {% import "ui/common_parts.html" as ui %}
+  {% import "ui/search_buttons.html" as sc %}
+
+  {% set th_list = [
+    {"class": "col-select", "label": "選択"},
+    {"class": "col-status", "label": "登録状況"},
+    {"class": "col-code", "label": "顧客cd"},
+    {"class": "col-customer", "label": "名前"},
+    {"class": "col-customer", "label": "名前ｶﾅ"},
+    {"class": "col-date", "label": "生年月日"}, 
+    {"class": "col-type", "label": "区分"},
+    {"class": "col-rank", "label": "ランク"},
+    {"class": "col-date", "label": "登録日"}
+  ] %}
+  {% set colspan = th_list | length %}
+
+  <!-- 検索フォーム -->
+  <form method="get" class="search-form mb-4">
+    <div class="search-grid">
+      {{ ui.search_input("顧客cd", "customer_code", filters.customer_code or "") }}
+      {{ ui.search_input("名前", "name", filters.name or "") }}
+      {{ ui.search_input("名前ｶﾅ", "name_kana", filters.name_kana or "") }}
+      {{ ui.search_input("電話番号", "tel", filters.tel or "") }}
+      {{ ui.search_input("勤務先", "workplace", filters.workplace or "") }}
+      {{ ui.search_input("登録状況", "registration_status", filters.registration_status or "") }}
+    </div>
+    <div class="search-grid">
+      <div class="search-item">
+        <label class="search-label">登録日</label>
+        <input type="date" name="registration_date_from"
+               value="{{ filters.registration_date_from or '' }}" class="search-input">
+        <span>～</span>
+        <input type="date" name="registration_date_to"
+               value="{{ filters.registration_date_to or '' }}" class="search-input">
+      </div>
+    </div>
+    {{ sc.search_buttons("/masters/customerlist", selected_limit, page, total_pages, total) }}
+  </form>
+
+  <!-- 一覧テーブル -->
+  <div class="scrollable-table" style="width: 100vw; min-width: 1200px; max-height: 70vh; overflow-y: auto; overflow-x: auto;">
+    <table class="app-table" style="width: 100%; min-width: 1200px; border-collapse: collapse; border: 1px solid #ccc;">
+      <thead style="position: sticky; top: 0; z-index: 2; background: #fff;">
+        <tr>
+          {% for th in th_list %}
+            <th class="{{ th.class }}" style="border: 1px solid #ccc;">{{ th.label }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if customers %}
+          {% for c in customers %}
+            <tr>
+              <td class="col-select text-center" style="border: 1px solid #ccc;">
+                <a href="{{ url_for('customerlist.customer_edit', customer_code=c.customer_code) }}"
+                   class="btn btn-sm btn-outline-primary"
+                   onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                  選択
+                </a>
+              </td>
+              <td class="col-status" style="border: 1px solid #ccc;">
+                {{ status_map.get(c.registration_status, '不明') }}
+              </td>
+              <td class="col-code" style="border: 1px solid #ccc;">{{ c.customer_code or '' }}</td>
+              <td class="col-customer" style="border: 1px solid #ccc;">{{ c.name or '' }}</td>
+              <td class="col-customer" style="border: 1px solid #ccc;">{{ c.name_kana or '' }}</td>
+              <td class="col-date" style="border: 1px solid #ccc;">{{ c.individual_birthDate or '' }}</td>
+              <td class="col-type" style="border: 1px solid #ccc;">{{ c.typeofcustomer or '' }}</td>
+              <td class="col-rank" style="border: 1px solid #ccc;">{{ c.customer_rank or '' }}</td>
+              <td class="col-date" style="border: 1px solid #ccc;">{{ c.registration_date or '' }}</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="{{ colspan }}" class="text-center text-muted" style="border: 1px solid #ccc;">
+              該当する顧客がありません。
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}

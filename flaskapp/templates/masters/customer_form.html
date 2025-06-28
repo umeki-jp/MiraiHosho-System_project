@@ -1,0 +1,70 @@
+{% extends "form_page_base.html" %}
+{% set page_title = mode == "edit" and "顧客詳細" or "新規 顧客登録" %}
+
+{# ============================================================================== #}
+{# このブロックに、表示するボタンのロジックをすべて一度だけ定義します。 #}
+{# ============================================================================== #}
+{% block left_buttons %}
+  {# ---------------------------------------------------------------- #}
+  {# 詳細画面 (編集モード) のボタン #}
+  {# ---------------------------------------------------------------- #}
+  {% if mode == "edit" %}
+    <input type="hidden" name="customer_code" value="{{ form_data.customer_code or '' }}">
+
+    {# 即時実行ボタン #}
+    {% if button_config.show_instant_update %}
+      <button type="submit" name="action" value="update_instant" class="form-action-btn">更新</button>
+    {% endif %}
+    {% if button_config.show_instant_delete %}
+      <button type="submit" name="action" value="delete_instant" class="form-action-btn btn-negative"> 削除</button>
+    {% endif %}
+
+    {# ボタンの見た目を分けるための区切り線 #}
+    <div class="vr mx-2"></div> 
+
+    {# 承認申請ボタン #}
+    {% if button_config.show_approval_update %}
+      <button type="submit" name="action" value="request_update_approval" class="form-action-btn">更新申請</button>
+    {% endif %}
+    {% if button_config.show_approval_delete %}
+      <button type="submit" name="action" value="request_delete_approval" class="form-action-btn btn-negative">削除申請</button>
+    {% endif %}
+    
+    {# 閉じるボタンは常に表示 #}
+    <button type="button" class="form-action-btn btn-negative" onclick="window.close();">閉じる</button>
+  
+  {# ---------------------------------------------------------------- #}
+  {# 新規登録画面のボタン #}
+  {# ---------------------------------------------------------------- #}
+  {% else %}
+    {# 即時実行ボタン #}
+    {% if button_config.show_instant_register %}
+      <button type="submit" name="action" value="register_instant" class="form-action-btn">登録</button>
+    {% endif %}
+
+    {# ボタンの見た目を分けるための区切り線 #}
+    <div class="vr mx-2"></div>
+
+    {# 承認申請ボタン #}
+    {% if button_config.show_approval_register %}
+      <button type="submit" name="action" value="request_new_approval" class="form-action-btn">登録申請</button>
+    {% endif %}
+    
+    {# 閉じるボタンは常に表示 #}
+    <button type="button" class="form-action-btn btn-negative" onclick="window.close();">登録せず閉じる</button>
+  {% endif %}
+{% endblock %}
+
+
+{# ============================================================================== #}
+{# メインコンテンツ部分。フォームの入力欄を読み込み、下部にもボタンを再表示します。 #}
+{# ============================================================================== #}
+{% block main_content %}
+  {% include "masters/customer_form_partial.html" %}
+  
+  <!-- 下部にも同じボタン群を配置 -->
+  <div class="form-action-btns mt-4">
+    {# 上で定義した 'left_buttons' ブロックの内容をここで再利用します #}
+    {{ self.left_buttons() }}
+  </div>
+{% endblock %}

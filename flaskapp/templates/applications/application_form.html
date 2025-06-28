@@ -1,0 +1,17 @@
+{% extends "form_page_base.html" %}
+{% set page_title = mode == "edit" and "申込詳細" or "新規 申込登録" %}
+
+{% block left_buttons %}
+  {% if mode == "edit" %}
+    <input type="hidden" name="application_id" value="{{ form_data.get('application_id', '') }}">
+    <button type="submit" name="action" value="register" class="form-action-btn">更新</button>
+    <button type="submit" name="action" value="delete" class="form-action-btn">削除</button>
+  {% else %}
+    <button type="submit" name="action" value="register" class="form-action-btn">登録</button>
+    <button type="button" class="form-action-btn" onclick="window.close();">登録せず閉じる</button>
+  {% endif %}
+{% endblock %}
+
+{% block main_content %}
+  {% include "applications/application_form_partial.html" %}
+{% endblock %}

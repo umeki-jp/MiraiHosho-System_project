@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}管理画面{% endblock %}</title>
+  
+  <style>
+    /* --- 全体のリセットと基本設定 --- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f9f9f9;
+    }
+
+    /* --- ヘッダー（上部バー）のデザイン --- */
+    .topbar {
+      background-color:#102d4e; /* ← サイドメニューと統一 */
+      color: white;
+      height: 50px;
+      padding: 0px 20px 0px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .header-left {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+
+    .user-info {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .logout-button {
+      background-color: #c62828;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+
+    .logout-button:hover {
+      background-color: #a02121;
+    }
+
+    /* --- レイアウト全体（サイドバー＋メイン） --- */
+    .body-layout {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+     /* --- ハンバーガーメニュー（モバイル用） --- */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 3px;      /* ← ヘッダー高さ(50px)＋余白(10px)で60pxに変更 */
+      left: 5px;
+      font-size: 24px;
+      background: #c62828;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    /* --- サイドバー（メニュー部分） --- */
+    .sidebar {
+      width: 220px;
+      background-color: #102d4e;
+      color: white;
+      padding: 20px;
+      transition: transform 0.3s ease;
+      height: 100vh;         /* ← これを追加 */
+      box-sizing: border-box;
+      overflow-y: auto;      /* サブメニューが多い場合もスクロール可能に */
+    }
+
+    .sidebar h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #f4f4f4;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 10px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 10px 12px;
+      border-radius: 5px;
+      background-color: #102d4e;
+      color: white;
+      text-decoration: none;
+      transition: background-color 0.3s;
+    }
+
+    .sidebar a.active,
+    .sidebar a:hover {
+      background-color: #c62828;
+    }
+
+    /* --- サブメニュー（子メニュー） --- */
+    .submenu {
+      display: none;
+      margin-left: 10px;
+    }
+
+    .submenu a {
+      background-color: #314e78;
+      font-size: 14px;
+    }
+
+    /* --- メインコンテンツ部分 --- */
+    .content {
+      flex: 1;
+      background-color: #f9f9f9;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .content h1 {
+      font-size: 22px;
+      color: #102d4e;  /* ← 濃い紺色に変更 */
+      margin-bottom: 20px;
+    }
+
+     /* --- レスポンシブ対応（スマホ・タブレット） --- */
+    @media (max-width: 768px) {
+      .body-layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        position: absolute;
+        top: 50px;
+        left: 0;
+        width: 220px;
+        background-color: #102d4e;
+        min-height: calc(100vh - 50px);
+        overflow-y: auto;
+        z-index: 500;
+        display: none;
+      }
+
+      .sidebar.open {
+        display: block;
+      }
+
+      .hamburger {
+        display: block;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .page-title-row {
+        padding-left: 48px; /* ハンバーガーメニューの幅＋余白分 */
+      }
+    }
+    
+  /* 新規登録ボタン用 */
+  .new-btn {
+    background-color: #274472; /* 薄い紺色 */
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 20px;
+    font-size: 1rem;
+    font-weight: normal;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    transition: background 0.2s;
+    text-decoration: none;
+    margin-left: 1em;
+  }
+  .new-btn:hover {
+    background-color: #19335c; /* さらに濃い紺色 */
+    color: #fff;
+  }
+
+    /* --- 検索フォーム関連 --- */
+  .search-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 24px;
+    margin-bottom: 20px;
+  }
+
+  .search-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);  /* 最大4列 */
+    gap: 12px 16px;
+  }
+
+  @media (max-width: 960px) {
+    .search-grid {
+      grid-template-columns: repeat(3, 1fr);  /* 中サイズ画面で3列 */
+    }
+  }
+
+  @media (max-width: 720px) {
+    .search-grid {
+      grid-template-columns: repeat(2, 1fr);  /* スマホなどで2列 */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .search-grid {
+      grid-template-columns: 1fr;             /* 極小画面で1列縦並び */
+    }
+  }
+
+  .search-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .search-label {
+    width: 6em;  /* 日本語8文字相当 */
+    text-align: center;
+    margin-right: 6px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: #000;
+  }
+
+  .search-input {
+    width: 100%;          /* ← フレックス内で広がる */
+    min-width: 100px;
+    max-width: 100%;
+    flex: 1 1 auto;       /* ← ラベルとのバランスに応じて伸縮可能に */
+  }
+
+  @media (max-width: 640px) {
+    .search-group {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .search-label {
+      text-align: left;
+      margin-bottom: 2px;
+    }
+  }
+
+  .search-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  /* --- 検索ボタン・クリアボタン --- */
+  .search-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .search-buttons .btn-search,
+  .search-buttons .btn-clear {
+    width: 120px;         /* ← お好きな幅に調整OK（例：120px） */
+    padding: 8px 0;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .btn-search {
+    background-color: #2e7d32; /* 濃緑 */
+    color: #fff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-clear {
+    background-color: #c62828; /* 朱色 */
+    color: #fff;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-search:hover {
+    background-color: #1b4d1e; /* より深い緑：#2e7d32 → #1b4d1e */
+    opacity: 1;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .btn-clear:hover {
+    background-color: #7d1515; /* より濃い朱色：#c62828 → #7d1515 */
+    opacity: 1;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .search-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: baseline;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .search-pagination {
+    display: flex;
+    align-items: flex-end;
+    font-size: 13px;    /* 他のフォーム要素に合わせる */
+    height: 28px;       /* ボタンやセレクトと縦位置を揃える */
+    line-height: 1.4;
+    align-items: baseline;
+  }
+
+  .search-pagination span {
+    display: inline-block;
+    line-height: 1;
+    padding-bottom: 2px;  /* ← 🔧 これでボタンとセレクトとピタッと下揃え */
+  }
+
+  .search-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-grow: 1;
+    align-items: baseline;
+  }
+
+  .search-limit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .select-limit {
+    width: 48px !important;
+    min-width: 48px;
+    max-width: 60px;
+    padding-right: 0;
+  }
+
+  /* --- 検索件数セレクトボックス --- */
+  .search-limit-wrapper label {
+    font-size: 13px;
+    margin-bottom: 0;
+  }
+
+  /* --- テーブルセルの省略表示 --- */
+  .table-cell-content {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    width: 100%;              /* ← セル幅いっぱいまで使う */
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .table-cell-content {
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+    }
+  }
+
+  /* --- テーブルの横スクロール --- */
+  .scrollable-table {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  /* --- テキスト中央寄せ --- */
+  .text-center {
+    text-align: center;
+  }
+
+/* --- テーブル列幅固定（選択列・区分） --- */
+  th.col-select,
+  td.col-select,
+  th.col-type,
+  td.col-type {
+    width: 3.5em;
+    min-width: 3.5em;
+    max-width: 3.5em;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* --- テーブル列幅固定（ランク） --- */
+  th.col-rank,
+  td.col-rank {
+    width: 7em;
+    min-width: 7em;
+    max-width: 7em;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* --- 検索結果テーブル列幅（申込番号・契約番号・ステータス・号室） --- */
+  th.col-application,
+  td.col-application,
+  th.col-contract,
+  td.col-contract,
+  td.col-code,
+  th.col-code,
+  th.col-collection, td.col-collection,
+  th.col-status, td.col-status,
+  th.col-room, td.col-room,
+  th.col-psp, td.col-psp {
+    width: 10ch;
+    min-width: 10ch;
+    max-width: 10ch;
+    text-align: center;
+  }
+
+  /* --- 検索結果テーブル列幅（日付）を半角10字幅で固定 --- */
+  th.col-date,
+  td.col-date {
+    width: 10ch;
+    min-width: 10ch;
+    max-width: 10ch;
+    text-align: center;
+    font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+    white-space: nowrap;
+  }
+
+  /* --- 検索結果テーブル列幅（賃借人・物件名称・代理店(現在)）--- */
+  th.col-customer, td.col-customer,
+  th.col-property, td.col-property,
+  th.col-agency, td.col-agency {
+    min-width: 10ch;    /* 最低半角10字分 */
+    max-width: 24ch;    /* 最大半角24字分 */
+    width: 16ch;        /* デフォルト幅 */
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: 13px;
+  color: #000;
+}
+
+.app-table th,
+.app-table td {
+  border: 1px solid #ccc;
+  padding: 4px 8px; /* 縦横の余白を狭く */
+  font-size: 0.95em;
+  word-break: break-word;
+  font-weight: normal;
+}
+
+.app-table th {
+  background-color: #88cc88;
+  color: #000;
+  text-align: center;
+}
+
+.app-table tbody tr {
+  background-color: #eef8ee;
+}
+
+.d-flex {
+  display: flex;
+}
+.justify-content-between {
+  justify-content: space-between;
+}
+.align-items-center {
+  align-items: center;
+}
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+/* ページネーション番号の間隔を広げる */
+.search-pagination a,
+.search-pagination strong {
+  margin: 0 6px;
+  padding: 1px 1px;
+  text-decoration: none;
+  display: inline-block;
+}
+
+/* ページネーションのナビゲーション幅を固定 */
+.page-nav {
+  display: inline-block;
+  min-width: 10px;
+  text-align: center;
+  margin: 0 6px;
+  padding: 1px 1px;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+/* 個別ページ用フォームボタン（横並び・紺色） */
+.form-action-btns {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-action-btn {
+  min-width: 120px;
+  max-width: 200px;
+  height: 44px;
+  font-size: 1rem;
+  border-radius: 4px;
+  text-align: center;
+  box-sizing: border-box;
+  background: #274472;
+  color: #fff;
+  border: 1px solid #274472;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  display: inline-block;
+}
+.form-action-btn:hover {
+  background: #19335c;
+  color: #fff;
+  border: 1px solid #19335c;
+}
+
+.btn-negative {
+  background: #444 !important;
+  color: #fff !important;
+  border: 1px solid #444 !important;
+}
+.btn-negative:hover {
+  background: #222 !important;
+  border: 1px solid #222 !important;
+}
+
+  </style>
+  {% block head_extra %}{% endblock %}
+  {% block head %}{% endblock %}
+
+  
+</head>
+<body>
+  <!-- 上部ヘッダー -->
+  <header class="topbar">
+  <!-- 左スペース（空白やロゴ） -->
+  <div class="header-left" style="flex: 1;">
+    保証管理システム（みらい保証）
+  </div>
+
+  <!-- 中央：ページタイトル -->
+  <div class="page-title-center" style="flex: 1; text-align: center; font-weight: normal; font-size: 1.2rem;">
+  【{{ page_title }}】
+  </div>
+
+  <!-- 右：ログイン情報 -->
+  <div class="user-info" style="flex: 1; display: flex; justify-content: flex-end; gap: 20px; font-size: 0.7rem;">
+  <span id="logged-in-user">ログインID: {{ user_id }}</span>
+  <a href="/logout" class="logout-button">ログアウト</a>
+  </div>
+
+</header>
+
+  {% if sidebar_enabled != false %}
+    <div class="hamburger" onclick="toggleSidebar()">☰</div>
+  {% endif %}
+
+  <!-- サイドバーとメイン -->
+  <div class="body-layout">
+
+  {# ✅ ヘッダー共通化（必要に応じてここに含める） #}
+
+  {% if sidebar_enabled != false %}
+    <nav class="sidebar" id="sidebar">
+      {% block sidebar %}
+        <ul id="menu-list"></ul>
+      {% endblock %}
+    </nav>
+  {% endif %}
+
+  <main class="content">
+    <div id="main-view">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
+
+  <script>
+    // menuDataの先頭にTOPを追加
+    const menuData = [
+      { title: "トップ", link: "{{ url_for('main.main_page') }}" },
+      { title: "申込一覧", link: "/applications/applicationslist" },
+      {
+        title: "契約管理", children: [
+          { title: "初回保証委託料", link: "/contract/initial" },
+          { title: "更新保証委託料", link: "/contract/renewal" },
+          { title: "追加保証委託料", link: "/contract/additional" },      
+          { title: "契約内容変更", link: "/contract/contractrevise" },
+          { title: "解約", link: "/contract/end" },
+          { title: "不成立", link: "/contract/invalid" },
+          { title: "書類", link: "/contract/documents" },
+          { title: "帳票一覧", link: "/contract/reports" }
+        ]
+      },
+      
+      { 
+        title: "集金代行", children: [
+          { title: "インサイト", link: "/collections/insight" },
+          { title: "ジャックス", link: "/collections/jaccs" },
+          { title: "クレジットカード", link: "/collections/credit" }
+        ]
+      },
+      
+      {
+        title: "立替・入金", children: [
+          { title: "立替一覧", link: "/receivables/receivableskist" },
+          { title: "債権一覧", link: "/receivables/claimslist" },
+          { title: "入金管理", link: "/receivables/payingin" }
+        ]
+      },
+      
+      { title: "行動履歴", link: "/logs/loglist" },
+      {
+        title: "売上管理", children: [
+          { title: "売上集計", link: "/sales/summary" },
+          { title: "初回保証委託料", link: "/sales/initial" },
+          { title: "月間保証委託料", link: "/sales/monthly" },
+          { title: "更新保証委託料", link: "/sales/renewal" },
+          { title: "追加保証委託料", link: "/sales/additional" }
+        ]
+      },
+      {
+        title: "マスタ登録", children: [
+          { title: "01 顧客", link: "/masters/customerlist" },
+          { title: "02 物件", link: "/masters/propertylist" },
+          { title: "03 代理店本社", link: "/masters/agency_masterslist" },
+          { title: "04 代理店", link: "/masters/agency_sublist" },
+          { title: "05 プラン", link: "/masters/planlist" },
+          { title: "06 仲介", link: "/masters/brokerlist" },
+          { title: "07 緊急・入居者", link: "/masters/otherlist" },
+          { title: "社員一覧", link: "/masters/shainlist" },
+          { title: "認証管理", link: "/masters/auth_user" }
+        ]
+      }
+    ];
+
+    // 2. サイドメニューul#menu-listが空のまま→renderMenuで必ず生成
+    function renderMenu(data) {
+      const menuList = document.getElementById("menu-list");
+      menuList.innerHTML = ""; // ← 既存内容をクリア
+
+      data.forEach(menu => {
+        const li = document.createElement("li");
+
+        if (menu.children) {
+          const a = document.createElement("a");
+          a.href = "javascript:void(0);";
+          a.textContent = menu.title + " ▼";
+
+          const submenu = document.createElement("ul");
+          submenu.className = "submenu";
+
+          a.onclick = () => {
+            const isOpen = submenu.style.display === "block";
+            document.querySelectorAll(".submenu").forEach(s => s.style.display = "none");
+            submenu.style.display = isOpen ? "none" : "block";
+          };
+          li.appendChild(a);
+
+          menu.children.forEach(child => {
+            const subLi = document.createElement("li");
+            const subA = document.createElement("a");
+            subA.href = child.link;
+            subA.textContent = child.title;
+            subLi.appendChild(subA);
+            submenu.appendChild(subLi);
+          });
+
+          li.appendChild(submenu);
+        } else {
+          const a = document.createElement("a");
+          a.href = menu.link;
+          a.textContent = menu.title;
+          li.appendChild(a);
+        }
+
+        menuList.appendChild(li);
+      });
+    }
+
+    // 3. アクティブ状態をページ遷移後も維持
+    function setActiveByUrl() {
+      const current = location.pathname;
+      document.querySelectorAll(".sidebar a").forEach(a => {
+        // サブメニューのaの場合は親ul.submenuを開く
+        if (a.getAttribute("href") === current) {
+          a.classList.add("active");
+          // サブメニューの場合は親ulを表示
+          if (a.parentElement.parentElement.classList.contains("submenu")) {
+            a.parentElement.parentElement.style.display = "block";
+          }
+          // タイトルも変更
+          document.getElementById("section-title").textContent = a.textContent.replace(" ▼", "");
+        } else {
+          a.classList.remove("active");
+        }
+      });
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.classList.toggle("open");
+    }
+
+    // 4. クリック時にもアクティブ状態をセット
+    document.addEventListener("DOMContentLoaded", () => {
+      renderMenu(menuData);
+      setActiveByUrl();
+      // クリック時にアクティブをセット
+      document.querySelectorAll(".sidebar a").forEach(a => {
+        a.addEventListener("click", function() {
+          setTimeout(setActiveByUrl, 10); // ページ遷移後にも反映
+        });
+      });
+    });
+  </script>
+  {% block script %}{% endblock %}
+</body>
+</html>

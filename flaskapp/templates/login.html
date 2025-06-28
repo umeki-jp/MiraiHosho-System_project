@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ログイン</title>
+  <style>
+    body { font-family: sans-serif; margin: 50px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; }
+    input[type="text"], input[type="password"] {
+      width: 200px; padding: 8px;
+    }
+    button { padding: 8px 20px; }
+  </style>
+</head>
+<body>
+  <h2>ログイン</h2>
+  <form method="POST">
+    <div class="form-group">
+      <label for="username">ユーザー名</label>
+      <input type="text" id="username" name="username">
+    </div>
+    <div class="form-group">
+      <label for="password">パスワード</label>
+      <input type="password" id="password" name="password">
+    </div>
+    <button type="submit">ログイン</button>
+  </form>
+</body>
+</html>

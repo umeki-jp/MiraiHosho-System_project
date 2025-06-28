@@ -1,0 +1,9 @@
+{# ui/period_input.html #}
+{% macro period_input(label, name, request) %}
+  <div class="search-group">
+    <label class="search-label">{{ label }}</label>
+    <input type="date" name="{{ name }}_from" class="search-input" value="{{ request.args.get(name ~ '_from', '') }}">
+    〜
+    <input type="date" name="{{ name }}_to" class="search-input" value="{{ request.args.get(name ~ '_to', '') }}">
+  </div>
+{% endmacro %}

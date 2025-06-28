@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ action_label }}完了</title>
+  <style>
+    body { text-align: center; padding: 3em; font-size: 1.2em; }
+    .done-message { margin-bottom: 2em; }
+    .close-btn {
+      padding: 0.7em 2em;
+      font-size: 1em;
+      background:#274472;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .close-btn:hover { background: #145ea8; }
+  </style>
+</head>
+<body>
+  <div class="done-message">
+    {{ action_label }}しました
+  </div>
+  <button class="close-btn" onclick="window.close()">閉じる</button>
+</body>
+</html>
