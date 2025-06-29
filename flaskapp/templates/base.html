@@ -28,6 +28,11 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: nowrap;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
     }
 
     .header-left {
@@ -42,22 +47,11 @@
       align-items: center;
     }
 
-    .logout-button {
-      background-color: #c62828;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 4px;
-      text-decoration: none;
-    }
-
-    .logout-button:hover {
-      background-color: #a02121;
-    }
-
     /* --- レイアウト全体（サイドバー＋メイン） --- */
     .body-layout {
       display: flex;
       height: calc(100vh - 50px);
+      margin-top: 50px; /* ヘッダーの高さ分を確保 */
     }
 
      /* --- ハンバーガーメニュー（モバイル用） --- */
@@ -85,6 +79,8 @@
       height: 100vh;         /* ← これを追加 */
       box-sizing: border-box;
       overflow-y: auto;      /* サブメニューが多い場合もスクロール可能に */
+      display: flex;
+      flex-direction: column;
     }
 
     .sidebar h2 {
@@ -114,6 +110,25 @@
     .sidebar a.active,
     .sidebar a:hover {
       background-color: #c62828;
+    }
+
+    /* --- ログアウトボタン（サイドメニュー用） --- */
+    .sidebar .logout-btn {
+      margin-top: auto;      /* 自動的に上側の余白を最大に */
+      padding-top: 20px;
+      border-top: 1px solid #314e78;
+      flex-shrink: 0;        /* サイズ縮小を防ぐ */
+    }
+
+    .sidebar .logout-btn a {
+      background-color: #c62828;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .sidebar .logout-btn a:hover {
+      background-color: #a02121;
     }
 
     /* --- サブメニュー（子メニュー） --- */
@@ -157,10 +172,11 @@
         overflow-y: auto;
         z-index: 500;
         display: none;
+        flex-direction: column;
       }
 
       .sidebar.open {
-        display: block;
+        display: flex;
       }
 
       .hamburger {
@@ -590,7 +606,6 @@
   <!-- 右：ログイン情報 -->
   <div class="user-info" style="flex: 1; display: flex; justify-content: flex-end; gap: 20px; font-size: 0.7rem;">
   <span id="logged-in-user">ログインID: {{ user_id }}</span>
-  <a href="/logout" class="logout-button">ログアウト</a>
   </div>
 
 </header>
@@ -607,7 +622,13 @@
   {% if sidebar_enabled != false %}
     <nav class="sidebar" id="sidebar">
       {% block sidebar %}
-        <ul id="menu-list"></ul>
+        <div style="flex: 1; overflow-y: auto;">
+          <ul id="menu-list"></ul>
+        </div>
+        <!-- ログアウトボタンをサイドバーの一番下に固定 -->
+        <div class="logout-btn">
+          <a href="/logout">ログアウト</a>
+        </div>
       {% endblock %}
     </nav>
   {% endif %}
