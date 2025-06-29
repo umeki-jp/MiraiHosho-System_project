@@ -4,6 +4,7 @@ from flaskapp.routes.auth import auth_bp
 from flaskapp.routes.applications import applications_bp
 from flaskapp.routes.root import root_bp
 from flaskapp.routes.customerlist import customerlist_bp
+from flaskapp.routes.api import api_bp
 
 
 def create_app():

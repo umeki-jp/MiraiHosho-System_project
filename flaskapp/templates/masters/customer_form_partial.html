@@ -1,372 +1,330 @@
-<link rel="stylesheet" href="{{ url_for('static', filename='ui/form_page_base.css') }}">
-<script src="{{ url_for('static', filename='js/form_page_base.js') }}"></script>
 
-<div class="form-container">
-  <form>
-    <div class="form-section">
-      <h3 class="form-section-title">基本情報</h3>
 
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="customer_code">顧客コード</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" id="customer_code" class="form-input input-w-hankaku-10" readonly style="background: #f0f0f0" value="{{ form_data.customer_code or '' }}">
-        </div>
-      </div>
+<!-- 基本情報セクション -->
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
 
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="registration_status">ステータス</label>
-        </div>
-        <div class="form-input-cell">
-          <div class="form-input-display">
-            {{ status_map[form_data.registration_status] or '未定義' }}
-          </div>
-          <input type="hidden" name="registration_status" value="{{ form_data.registration_status or 0 }}">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="name">名前 <span class="required">*</span></label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="name" id="name" class="form-input input-w-hankaku-40" required value="{{ form_data.name or '' }}" maxlength="50" placeholder="全角入力">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="name_kana">フリガナ</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="name_kana" id="name_kana" class="form-input input-w-hankaku-40" value="{{ form_data.name_kana or '' }}" maxlength="60" placeholder="半角カナ入力">
-        </div>
-      </div>
+  <div class="row">
+    <label for="customer_code" class="col-sm-2 col-form-label">顧客コード</label>
+    <div class="col-sm-10">
+      <input type="text" id="customer_code" class="form-control" readonly style="background: #f0f0f0; max-width: 10em;" value="{{ form_data.customer_code or '' }}">
     </div>
+  </div>
 
-    <div class="form-section">
-      <div class="customer-type-toggle">
-        <div class="type-option {% if form_data.typeofcustomer == '個人' %}active{% endif %}" data-type="個人">個人</div>
-        <div class="type-option {% if form_data.typeofcustomer == '法人' %}active{% endif %}" data-type="法人">法人</div>
-      </div>
-      <select name="typeofcustomer" id="typeofcustomer" style="display: none;">
-        <option value="個人" {% if form_data.typeofcustomer == '個人' %}selected{% endif %}>個人</option>
-        <option value="法人" {% if form_data.typeofcustomer == '法人' %}selected{% endif %}>法人</option>
+  <div class="row">
+    <label for="registration_status" class="col-sm-2 col-form-label">ステータス</label>
+    <div class="col-sm-10">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ status_map[form_data.registration_status] or '未定義' }}</div>
+      <input type="hidden" name="registration_status" style="max-width: 10em;" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="name" class="col-sm-2 col-form-label">名前 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="name" id="name" class="form-control" style="max-width: 30em;" required value="{{ form_data.name or '' }}" maxlength="50" placeholder="全角入力">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="name_kana" class="col-sm-2 col-form-label">フリガナ</label>
+    <div class="col-sm-10">
+      <input type="text" name="name_kana" id="name_kana" class="form-control" style="max-width: 30em;" value="{{ form_data.name_kana or '' }}" maxlength="60" placeholder="半角カナ入力">
+    </div>
+  </div>
+</div>
+
+<!-- 顧客タイプセクション -->
+<div class="form-section">
+  <div class="customer-type-toggle">
+    <div class="type-option {% if form_data.typeofcustomer == '個人' %}active{% endif %}" data-type="個人">個人</div>
+    <div class="type-option {% if form_data.typeofcustomer == '法人' %}active{% endif %}" data-type="法人">法人</div>
+  </div>
+  <select name="typeofcustomer" id="typeofcustomer" style="display: none;">
+    <option value="個人" {% if form_data.typeofcustomer == '個人' %}selected{% endif %}>個人</option>
+    <option value="法人" {% if form_data.typeofcustomer == '法人' %}selected{% endif %}>法人</option>
+  </select>
+</div>
+
+<!-- 個人情報セクション -->
+<div class="conditional-section {% if form_data.typeofcustomer == '個人' %}active{% endif %}" id="individual-section">
+  <div class="form-section">
+  <h3 class="form-section-title">個人情報</h3>
+  </div>
+
+  <div class="row">
+    <label for="individual_nationality" class="col-sm-2 col-form-label">国籍</label>
+    <div class="col-sm-10">
+      <input type="text" name="individual_nationality" id="individual_nationality" class="form-control" style="max-width: 20em;" value="{{ form_data.individual_nationality or '日本' }}" maxlength="15">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="individual_birthDate" class="col-sm-2 col-form-label">生年月日</label>
+    <div class="col-sm-10" style="display: flex; align-items: center; gap: 16px;">
+      <input type="text" name="individual_birthDate" id="individual_birthDate" class="form-control" style="max-width: 10em;" maxlength="8" pattern="\d{8}" placeholder="例: 20250101" value="{{ form_data.individual_birthDate or '' }}">
+      <span id="seireki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
+      <span id="wareki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
+      <span id="age_display" style="color: #d60000; font-size: 1em; min-width: 60px; display: inline-block;"></span>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="individual_gender" class="col-sm-2 col-form-label">性別</label>
+    <div class="col-sm-10">
+      <select name="individual_gender" id="individual_gender" class="form-select" style="background-color: #ffffff; max-width: 10em;">
+        <option value="">～選択～</option>
+        <option value="男" {% if form_data.individual_gender == '男' %}selected{% endif %}>男性</option>
+        <option value="女" {% if form_data.individual_gender == '女' %}selected{% endif %}>女性</option>
       </select>
     </div>
+  </div>
 
-    <div class="form-section conditional-section {% if form_data.typeofcustomer == '個人' %}active{% endif %}" id="individual-section">
-      <h3 class="form-section-title">個人情報</h3>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_nationality">国籍</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="individual_nationality" id="individual_nationality" class="form-input input-w-hankaku-20" value="{{ form_data.individual_nationality or '日本' }}" maxlength="15">
-        </div>
+  <div class="row">
+    <label class="col-sm-2 col-form-label">現住所</label>
+    <div class="col-sm-10">
+      <!-- 郵便番号 -->
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <input type="text" name="individual_postalcode" id="individual_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.individual_postalcode or '' }}" maxlength="8">
+        <button class="btn btn-outline-secondary" type="button" id="search-address-btn">住所検索</button>
+      </div>
+      <!-- 都道府県・市区町村 -->
+      <div class="d-flex gap-2 mb-2"> 
+        <input type="text" name="individual_prefecture" id="individual_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_prefecture or '' }}" maxlength="5">       
+        <input type="text" name="individual_city" id="individual_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_city or '' }}" maxlength="20">
+      </div>
+      <!-- 番地・建物名 -->
+      <div class="mb-2">
+        <input type="text" name="individual_address" id="individual_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_address or '' }}" maxlength="50">
       </div>
 
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_birthDate">生年月日</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; align-items: center; gap: 16px;">
-          <input type="text" name="individual_birthDate" id="individual_birthDate" class="form-input input-w-hankaku-10" maxlength="8" pattern="\d{8}" placeholder="例: 20250101" value="{{ form_data.individual_birthDate or '' }}">
-          <span id="seireki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
-          <span id="wareki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
-          <span id="age_display" style="color: #d60000; font-size: 1em; min-width: 60px; display: inline-block;"></span>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_gender">性別</label>
-        </div>
-        <div class="form-input-cell">
-          <select name="individual_gender" id="individual_gender" class="form-input input-w-hankaku-10">
-            <option value=""></option>
-            <option value="男" {% if form_data.individual_gender == '男' %}selected{% endif %}>男性</option>
-            <option value="女" {% if form_data.individual_gender == '女' %}selected{% endif %}>女性</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label>現住所</label>
-        </div>
-        <div class="form-input-cell form-input-cell-address">
-          <div>
-            <input type="text" name="individual_postalcode" id="individual_postalcode" class="form-input input-w-hankaku-10" placeholder="郵便番号" value="{{ form_data.individual_postalcode or '' }}" maxlength="8">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="individual_prefecture" id="individual_prefecture" class="form-input input-w-hankaku-10" placeholder="都道府県" value="{{ form_data.individual_prefecture or '' }}" maxlength="5">
-            <input type="text" name="individual_city" id="individual_city" class="form-input input-w-hankaku-20" placeholder="市区町村" value="{{ form_data.individual_city or '' }}" maxlength="20">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="individual_address" id="individual_address" class="form-input input-w-hankaku-40" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_address or '' }}" maxlength="50">
-            <select name="individual_currentaddresscategory" id="individual_currentaddresscategory" class="form-input input-w-hankaku-10">
-              <option value="">選択してください</option>
-              <option value="自己所有" {% if form_data.individual_currentaddresscategory == '自己所有' %}selected{% endif %}>自己所有</option>
-              <option value="家族所有" {% if form_data.individual_currentaddresscategory == '家族所有' %}selected{% endif %}>家族所有</option>
-              <option value="賃貸" {% if form_data.individual_currentaddresscategory == '賃貸' %}selected{% endif %}>賃貸</option>
-              <option value="社宅" {% if form_data.individual_currentaddresscategory == '社宅' %}selected{% endif %}>社宅</option>
-              <option value="その他" {% if form_data.individual_currentaddresscategory == 'その他' %}selected{% endif %}>その他</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_tel">電話番号</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; gap: 18px; align-items: center;">
-          <input type="tel" name="individual_tel1" id="individual_tel" class="form-input input-w-hankaku-15" value="{{ form_data.individual_tel or '' }}" placeholder="例: 090-1234-5678" maxlength="13">
-          <input type="tel" name="individual_tel2" id="individual_tel2" class="form-input input-w-hankaku-15" value="{{ form_data.individual_tel2 or '' }}" placeholder="例: 092-123-5678" maxlength="13">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_mail">メールアドレス</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="email" name="individual_mail" id="individual_mail" class="form-input input-w-hankaku-40" value="{{ form_data.individual_mail or '' }}" maxlength="30">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_occupation">職業・職種</label>
-        </div>
-        <div class="form-input-cell">
-          <select name="individual_occupationcategory" id="individual_occupationcategory" class="form-input input-w-hankaku-15">
-            <option value="">～選択してください～</option>
-            <option value="正社員" {% if form_data.individual_occupationcategory == '正社員' %}selected{% endif %}>正社員</option>
-            <option value="公務員" {% if form_data.individual_occupationcategory == '公務員' %}selected{% endif %}>公務員</option>
-            <option value="会社役員" {% if form_data.individual_occupationcategory == '会社役員' %}selected{% endif %}>会社役員</option>
-            <option value="自営" {% if form_data.individual_occupationcategory == '自営' %}selected{% endif %}>自営</option>
-            <option value="契約・派遣" {% if form_data.individual_occupationcategory == '契約・派遣' %}selected{% endif %}>契約・派遣</option>
-            <option value="パート・アルバイト" {% if form_data.individual_occupationcategory == 'パート・アルバイト' %}selected{% endif %}>パート・アルバイト</option>
-            <option value="学生" {% if form_data.individual_occupationcategory == '学生' %}selected{% endif %}>学生</option>
-            <option value="専業主婦" {% if form_data.individual_occupationcategory == '専業主婦' %}selected{% endif %}>専業主婦</option>
-            <option value="無職" {% if form_data.individual_occupationcategory == '無職' %}selected{% endif %}>無職</option>
-            <option value="年金" {% if form_data.individual_occupationcategory == '年金' %}selected{% endif %}>年金</option>
-            <option value="生活保護" {% if form_data.individual_occupationcategory == '生活保護' %}selected{% endif %}>生活保護</option>
-            <option value="その他" {% if form_data.individual_occupationcategory == 'その他' %}selected{% endif %}>その他</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_workplace">勤務先・通学先</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="individual_workplace" id="individual_workplace" class="form-input input-w-hankaku-40" value="{{ form_data.individual_workplace or '' }}" maxlength="100">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label>勤務先住所</label>
-        </div>
-        <div class="form-input-cell form-input-cell-address">
-          <div>
-            <input type="text" name="individual_workplace_postalcode" id="individual_workplace_postalcode" class="form-input input-w-hankaku-10" placeholder="郵便番号" value="{{ form_data.individual_workplace_postalcode or '' }}" maxlength="8">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="individual_workplace_prefecture" id="individual_workplace_prefecture" class="form-input input-w-hankaku-10" placeholder="都道府県" value="{{ form_data.individual_workplace_prefecture or '' }}" maxlength="5">
-            <input type="text" name="individual_workplace_city" id="individual_workplace_city" class="form-input input-w-hankaku-20" placeholder="市区町村" value="{{ form_data.individual_workplace_city or '' }}" maxlength="20">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="individual_workplace_address" id="individual_workplace_address" class="form-input input-w-hankaku-40" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_workplace_address or '' }}" maxlength="50">
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_workplace_tel">勤務先電話番号</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="tel" name="individual_workplace_tel1" id="individual_workplace_tel" class="form-input input-w-hankaku-15" value="{{ form_data.individual_workplace_tel or '' }}" placeholder="例: 090-1234-5678" maxlength="13">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="individual_industry">職種</label>
-        </div>
-        <div class="form-input-cell">
-          <select name="individual_industry" id="individual_industry" class="form-input input-w-hankaku-15">
-            <option value="">～選択してください～</option>
-            <option value="IT・通信" {% if form_data.individual_industry == 'IT・通信' %}selected{% endif %}>IT・通信</option>
-            <option value="飲食" {% if form_data.individual_industry == '飲食' %}selected{% endif %}>飲食</option>
-            <option value="製造" {% if form_data.individual_industry == '製造' %}selected{% endif %}>製造</option>
-            <option value="小売/サービス" {% if form_data.individual_industry == '小売/サービス' %}selected{% endif %}>小売/サービス</option>
-            <option value="医療" {% if form_data.individual_industry == '医療' %}selected{% endif %}>医療</option>
-            <option value="教育" {% if form_data.individual_industry == '教育' %}selected{% endif %}>教育</option>
-            <option value="金融" {% if form_data.individual_industry == '金融' %}selected{% endif %}>金融</option>
-            <option value="建設/工事" {% if form_data.individual_industry == '建設/工事' %}selected{% endif %}>建設/工事</option>
-            <option value="陸運" {% if form_data.individual_industry == '陸運' %}selected{% endif %}>陸運</option>
-            <option value="農林水産業" {% if form_data.individual_industry == '農林水産業' %}selected{% endif %}>農林水産業</option>
-            <option value="不動産" {% if form_data.individual_industry == '不動産' %}selected{% endif %}>不動産</option>
-            <option value="接客" {% if form_data.individual_industry == '接客' %}selected{% endif %}>接客</option>
-            <option value="その他" {% if form_data.individual_industry == 'その他' %}selected{% endif %}>その他</option>
-          </select>
-        </div>
+      <!-- 住居区分 -->
+      <div>
+        <select name="individual_currentaddresscategory" id="individual_currentaddresscategory" class="form-select form-select-sm" style="max-width: 10em;">
+          <option value="">～住所区分～</option>
+          <option value="自己所有" {% if form_data.individual_currentaddresscategory == '自己所有' %}selected{% endif %}>自己所有</option>
+          <option value="家族所有" {% if form_data.individual_currentaddresscategory == '家族所有' %}selected{% endif %}>家族所有</option>
+          <option value="賃貸" {% if form_data.individual_currentaddresscategory == '賃貸' %}selected{% endif %}>賃貸</option>
+          <option value="社宅" {% if form_data.individual_currentaddresscategory == '社宅' %}selected{% endif %}>社宅</option>
+          <option value="その他" {% if form_data.individual_currentaddresscategory == 'その他' %}selected{% endif %}>その他</option>
+        </select>
       </div>
     </div>
+  </div>
 
-    <div class="form-section conditional-section {% if form_data.typeofcustomer == '法人' %}active{% endif %}" id="corporate-section">
-      <h3 class="form-section-title">法人情報</h3>
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="corporate_registrationnumber">法人等番号</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="corporate_registrationnumber" id="corporate_registrationnumber" class="form-input input-w-hankaku-15" value="{{ form_data.corporate_registrationnumber or '' }}" maxlength="20">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="corporate_representative">代表者 </label>
-        </div>
-        <div class="form-input-cell">
-          <input type="text" name="corporate_representative" id="corporate_representative" class="form-input input-w-hankaku-40" value="{{ form_data.corporate_representative or '' }}" maxlength="50">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="corporate_foundationdate">設立日 </label>
-        </div>
-        <div class="form-input-cell" style="display: flex; align-items: center; gap: 16px;">
-          <input type="text" name="corporate_foundationdate" id="corporate_foundationdate" class="form-input input-w-hankaku-10" maxlength="8" pattern="\d{8}" placeholder="例: 20250101" value="{{ form_data.corporate_foundationdate or '' }}">
-          <span id="seireki_foundationdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
-          <span id="wareki_foundationdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-            <label for="corporate_capital">資本金</label>
-        </div>
-        <div class="form-input-cell">
-            <input type="text" name="corporate_capital" id="corporate_capital" class="form-input input-w-hankaku-15" value="{{ form_data.corporate_capital or '' }}" maxlength="15">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-            <label for="corporate_businesscontent">事業内容</label>
-        </div>
-        <div class="form-input-cell">
-            <select name="corporate_businesscontent" id="corporate_businesscontent" class="form-input input-w-hankaku-15" maxlength="10">
-              <option value="">～選択してください～</option>
-              <option value="IT" {% if form_data.corporate_businesscontent == 'IT' %}selected{% endif %}>IT</option>
-              <option value="製造業" {% if form_data.corporate_businesscontent == '製造業' %}selected{% endif %}>製造業</option>
-              <option value="小売業" {% if form_data.corporate_businesscontent == '小売業' %}selected{% endif %}>小売業</option>
-              <option value="サービス業" {% if form_data.corporate_businesscontent == 'サービス業' %}selected{% endif %}>サービス業</option>
-                <option value="飲食業" {% if form_data.corporate_businesscontent == '飲食業' %}selected{% endif %}>飲食業</option>
-                <option value="建設業" {% if form_data.corporate_businesscontent == '建設業' %}selected{% endif %}>建設業</option>
-                <option value="医療" {% if form_data.corporate_businesscontent == '医療' %}selected{% endif %}>医療</option>
-                <option value="教育" {% if form_data.corporate_businesscontent == '教育' %}selected{% endif %}>教育</option>
-                <option value="金融" {% if form_data.corporate_businesscontent == '金融' %}selected{% endif %}>金融</option>
-                <option value="不動産" {% if form_data.corporate_businesscontent == '不動産' %}selected{% endif %}>不動産</option>
-                <option value="その他" {% if form_data.corporate_businesscontent == 'その他' %}selected{% endif %}>その他</option>
-            </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label>法人住所</label>
-        </div>
-        <div class="form-input-cell form-input-cell-address">
-          <div>
-            <input type="text" name="corporate_postalcode" id="corporate_postalcode" class="form-input input-w-hankaku-10" placeholder="郵便番号" value="{{ form_data.corporate_postalcode or '' }}" maxlength="8">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="corporate_prefecture" id="corporate_prefecture" class="form-input input-w-hankaku-10" placeholder="都道府県" value="{{ form_data.corporate_prefecture or '' }}" maxlength="5">
-            <input type="text" name="corporate_city" id="corporate_city" class="form-input input-w-hankaku-20" placeholder="市区町村" value="{{ form_data.corporate_city or '' }}" maxlength="20">
-          </div>
-          <div class="address-row-inline">
-            <input type="text" name="corporate_address" id="corporate_address" class="form-input input-w-hankaku-40" placeholder="番地・建物名(全角入力)" value="{{ form_data.corporate_address or '' }}" maxlength="50">
-          </div>
-        </div>
-      </div>
-
-        <div class="form-row">
-      <div class="form-label-cell">
-          <label for="corporate_tel">法人電話番号</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; gap: 18px; align-items: center;">
-          <input type="tel" name="corporate_tel1" id="corporate_tel1" class="form-input input-w-hankaku-15" value="{{ form_data.corporate_tel1 or '' }}" placeholder="例: 090-1234-5678" maxlength="13">
-          <input type="tel" name="corporate_tel2" id="corporate_tel2" class="form-input input-w-hankaku-15" value="{{ form_data.corporate_tel2 or '' }}" placeholder="例: 092-123-5678" maxlength="13">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="corporate_mail">法人メールアドレス</label>
-        </div>
-        <div class="form-input-cell">
-          <input type="email" name="corporate_mail" id="corporate_mail" class="form-input input-w-hankaku-40" value="{{ form_data.corporate_mail or '' }}" maxlength="30">
-        </div>
-      </div>
-
+  <div class="row">
+    <label for="individual_tel" class="col-sm-2 col-form-label">電話番号</label>
+    <div class="col-sm-10 d-flex align-items-center gap-3">
+      <input type="tel" name="individual_tel1" id="individual_tel" class="form-control" style="max-width: 20em;" value="{{ form_data.individual_tel or '' }}" placeholder="TEL1  例: 090-1234-5678" maxlength="13">
+      <input type="tel" name="individual_tel2" id="individual_tel2" class="form-control" style="max-width: 20em;" value="{{ form_data.individual_tel2 or '' }}" placeholder="TEL2  例: 092-123-5678" maxlength="13">
     </div>
+  </div>
 
-    <div class="form-section">
-      <h3 class="form-section-title">その他情報</h3>
+  <div class="row">
+    <label for="individual_mail" class="col-sm-2 col-form-label">メールアドレス</label>
+    <div class="col-sm-10">
+      <input type="email" name="individual_mail" id="individual_mail" class="form-control" style="max-width: 30em;" value="{{ form_data.individual_mail or '' }}" maxlength="30">
+    </div>
+  </div>
 
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="customer_rank">顧客ランク</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" id="customer_rank" class="form-input input-w-hankaku-10" name="customer_rank" value="{{ form_data.customer_rank or '' }}" maxlength="10">
-          <input type="text" id="customer_rankdetails" class="form-input input-w-hankaku-40" name="customer_rankdetails" value="{{ form_data.customer_rankdetails or '' }}" placeholder="ランク詳細">
-        </div>
+  <div class="row">
+    <label for="individual_occupation" class="col-sm-2 col-form-label">職業・雇用形態</label>
+    <div class="col-sm-10">
+      <select name="individual_occupationcategory" id="individual_occupationcategory" class="form-select"style="max-width: 10em;">
+        <option value="">～選択～</option>
+        <option value="正社員" {% if form_data.individual_occupationcategory == '正社員' %}selected{% endif %}>正社員</option>
+        <option value="公務員" {% if form_data.individual_occupationcategory == '公務員' %}selected{% endif %}>公務員</option>
+        <option value="会社役員" {% if form_data.individual_occupationcategory == '会社役員' %}selected{% endif %}>会社役員</option>
+        <option value="自営" {% if form_data.individual_occupationcategory == '自営' %}selected{% endif %}>自営</option>
+        <option value="契約・派遣" {% if form_data.individual_occupationcategory == '契約・派遣' %}selected{% endif %}>契約・派遣</option>
+        <option value="パート・アルバイト" {% if form_data.individual_occupationcategory == 'パート・アルバイト' %}selected{% endif %}>パート・アルバイト</option>
+        <option value="学生" {% if form_data.individual_occupationcategory == '学生' %}selected{% endif %}>学生</option>
+        <option value="専業主婦" {% if form_data.individual_occupationcategory == '専業主婦' %}selected{% endif %}>専業主婦</option>
+        <option value="無職" {% if form_data.individual_occupationcategory == '無職' %}selected{% endif %}>無職</option>
+        <option value="年金" {% if form_data.individual_occupationcategory == '年金' %}selected{% endif %}>年金</option>
+        <option value="生活保護" {% if form_data.individual_occupationcategory == '生活保護' %}selected{% endif %}>生活保護</option>
+        <option value="その他" {% if form_data.individual_occupationcategory == 'その他' %}selected{% endif %}>その他</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="individual_workplace" class="col-sm-2 col-form-label">勤務先・通学先</label>
+    <div class="col-sm-10">
+      <input type="text" name="individual_workplace" id="individual_workplace" class="form-control" style="max-width: 20em;"value="{{ form_data.individual_workplace or '' }}" maxlength="100">
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">勤務先住所</label>
+    <div class="col-sm-10">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <input type="text" name="individual_workplace_postalcode" id="individual_workplace_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;"value="{{ form_data.individual_workplace_postalcode or '' }}" maxlength="8">
+        <button class="btn btn-outline-secondary" type="button" id="search-workplace-address-btn">住所検索</button>
       </div>
-
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="customer_remarks">備考</label>
-        </div>
-        <div class="form-input-cell">
-          <textarea name="customer_remarks" id="customer_remarks" class="form-input input-w-hankaku-40"
-          rows="4" maxlength="200"
-          style="width: 100%; box-sizing: border-box;">{{ form_data.customer_remarks or '' }}</textarea>
-        </div>
+      <div class="d-flex gap-2 mb-2">       
+          <input type="text" name="individual_workplace_prefecture" id="individual_workplace_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_workplace_prefecture or '' }}" maxlength="5">
+          <input type="text" name="individual_workplace_city" id="individual_workplace_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_workplace_city or '' }}" maxlength="20">        
       </div>
-    
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="registration_date">登録日</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; gap: 8px; align-items: center;">
-          <input type="date" name="registration_date" id="registration_date" class="form-input input-w-hankaku-10" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1" style="background: #f0f0f0;">
-          <input type="text" name="registration_shain" id="registration_shain" class="form-input input-w-hankaku-20" value="{{ form_data.registration_shain_code or '' }}" placeholder="登録者" maxlength="20" readonly tabindex="-1" style="background: #f0f0f0;">
-        </div>
+      <div class="mb-2">
+        <input type="text" name="individual_workplace_address" id="individual_workplace_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_workplace_address or '' }}" maxlength="50">
       </div>
+    </div>
+  </div>
 
-      <div class="form-row">
-        <div class="form-label-cell">
-          <label for="update_date">更新日</label>
-        </div>
-        <div class="form-input-cell" style="display: flex; gap: 8px; align-items: center;">
-          <input type="date" name="update_date" id="update_date" class="form-input input-w-hankaku-10" value="{{ form_data.update_date or '' }}" readonly tabindex="-1" style="background: #f0f0f0;">
-          <input type="text" name="update_shain" id="update_shain" class="form-input input-w-hankaku-20" value="{{ form_data.update_shain_code or '' }}" placeholder="更新者" maxlength="20" readonly tabindex="-1" style="background: #f0f0f0;">
-        </div>
-      </div>
+  <div class="row">
+    <label for="individual_workplace_tel" class="col-sm-2 col-form-label">勤務先電話番号</label>
+    <div class="col-sm-10">
+      <input type="tel" name="individual_workplace_tel1" id="individual_workplace_tel" class="form-control" style="max-width: 20em;"value="{{ form_data.individual_workplace_tel or '' }}" placeholder="例: 090-1234-5678" maxlength="13">
+    </div>
+  </div>
 
-  </form>
+  <div class="row">
+    <label for="individual_industry" class="col-sm-2 col-form-label">職種</label>
+    <div class="col-sm-10">
+      <select name="individual_industry" id="individual_industry" class="form-select" style="max-width: 10em;">
+        <option value="">～選択～</option>
+        <option value="IT・通信" {% if form_data.individual_industry == 'IT・通信' %}selected{% endif %}>IT・通信</option>
+        <option value="飲食" {% if form_data.individual_industry == '飲食' %}selected{% endif %}>飲食</option>
+        <option value="製造" {% if form_data.individual_industry == '製造' %}selected{% endif %}>製造</option>
+        <option value="小売/サービス" {% if form_data.individual_industry == '小売/サービス' %}selected{% endif %}>小売/サービス</option>
+        <option value="医療" {% if form_data.individual_industry == '医療' %}selected{% endif %}>医療</option>
+        <option value="教育" {% if form_data.individual_industry == '教育' %}selected{% endif %}>教育</option>
+        <option value="金融" {% if form_data.individual_industry == '金融' %}selected{% endif %}>金融</option>
+        <option value="建設/工事" {% if form_data.individual_industry == '建設/工事' %}selected{% endif %}>建設/工事</option>
+        <option value="陸運" {% if form_data.individual_industry == '陸運' %}selected{% endif %}>陸運</option>
+        <option value="農林水産業" {% if form_data.individual_industry == '農林水産業' %}selected{% endif %}>農林水産業</option>
+        <option value="不動産" {% if form_data.individual_industry == '不動産' %}selected{% endif %}>不動産</option>
+        <option value="接客" {% if form_data.individual_industry == '接客' %}selected{% endif %}>接客</option>
+        <option value="その他" {% if form_data.individual_industry == 'その他' %}selected{% endif %}>その他</option>
+      </select>
+    </div>
+  </div>
 </div>
+
+<!-- 法人情報セクション -->
+<div class="conditional-section {% if form_data.typeofcustomer == '法人' %}active{% endif %}" id="corporate-section">
+  <div class="form-section">
+  <h3 class="form-section-title">法人情報</h3>
+  </div>
+  <div class="row">
+    <label for="corporate_registrationnumber" class="col-sm-2 col-form-label">法人等番号</label>
+    <div class="col-sm-10">
+      <input type="text" name="corporate_registrationnumber" id="corporate_registrationnumber" class="form-control" style="max-width: 20em;"value="{{ form_data.corporate_registrationnumber or '' }}" maxlength="20">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_representative" class="col-sm-2 col-form-label">代表者 </label>
+    <div class="col-sm-10">
+      <input type="text" name="corporate_representative" id="corporate_representative" class="form-control" style="max-width: 20em;" value="{{ form_data.corporate_representative or '' }}" maxlength="50">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_foundationdate" class="col-sm-2 col-form-label">設立日 </label>
+    <div class="col-sm-10" style="display: flex; align-items: center; gap: 16px;">
+      <input type="text" name="corporate_foundationdate" id="corporate_foundationdate" class="form-control" maxlength="8" pattern="\d{8}" placeholder="例: 20250101"style="max-width: 10em;" value="{{ form_data.corporate_foundationdate or '' }}">
+      <span id="seireki_foundationdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
+      <span id="wareki_foundationdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_capital" class="col-sm-2 col-form-label">資本金</label>
+    <div class="col-sm-10">
+      <input type="text" name="corporate_capital" id="corporate_capital" class="form-control" style="max-width: 10em;" value="{{ form_data.corporate_capital or '' }}" maxlength="15">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_businesscontent" class="col-sm-2 col-form-label">事業内容</label>
+    <div class="col-sm-10">
+      <select name="corporate_businesscontent" id="corporate_businesscontent" class="form-select" maxlength="10" style="max-width: 10em;">
+        <option value="">～選択～</option>
+        <option value="IT" {% if form_data.corporate_businesscontent == 'IT' %}selected{% endif %}>IT</option>
+        <option value="製造業" {% if form_data.corporate_businesscontent == '製造業' %}selected{% endif %}>製造業</option>
+        <option value="小売業" {% if form_data.corporate_businesscontent == '小売業' %}selected{% endif %}>小売業</option>
+        <option value="サービス業" {% if form_data.corporate_businesscontent == 'サービス業' %}selected{% endif %}>サービス業</option>
+          <option value="飲食業" {% if form_data.corporate_businesscontent == '飲食業' %}selected{% endif %}>飲食業</option>
+          <option value="建設業" {% if form_data.corporate_businesscontent == '建設業' %}selected{% endif %}>建設業</option>
+          <option value="医療" {% if form_data.corporate_businesscontent == '医療' %}selected{% endif %}>医療</option>
+          <option value="教育" {% if form_data.corporate_businesscontent == '教育' %}selected{% endif %}>教育</option>
+          <option value="金融" {% if form_data.corporate_businesscontent == '金融' %}selected{% endif %}>金融</option>
+          <option value="不動産" {% if form_data.corporate_businesscontent == '不動産' %}selected{% endif %}>不動産</option>
+          <option value="その他" {% if form_data.corporate_businesscontent == 'その他' %}selected{% endif %}>その他</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">法人住所</label>
+    <div class="col-sm-10">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <input type="text" name="corporate_postalcode" id="corporate_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.corporate_postalcode or '' }}" maxlength="8">
+        <button class="btn btn-outline-secondary" type="button" id="search-corporate-address-btn">住所検索</button>
+      </div>
+      <div class="d-flex gap-2 mb-2">
+          <input type="text" name="corporate_prefecture" id="corporate_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.corporate_prefecture or '' }}" maxlength="5">
+          <input type="text" name="corporate_city" id="corporate_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.corporate_city or '' }}" maxlength="20">
+      </div>
+      <div class="mb-2">
+        <input type="text" name="corporate_address" id="corporate_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.corporate_address or '' }}" maxlength="50">
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_tel" class="col-sm-2 col-form-label">法人電話番号</label>
+    <div class="col-sm-10" style="display: flex; gap: 18px; align-items: center;">
+      <input type="tel" name="corporate_tel1" id="corporate_tel1" class="form-control" style="max-width: 20em;" value="{{ form_data.corporate_tel1 or '' }}" placeholder="TEL1  例: 090-1234-5678" maxlength="13">
+      <input type="tel" name="corporate_tel2" id="corporate_tel2" class="form-control" style="max-width: 20em;" value="{{ form_data.corporate_tel2 or '' }}" placeholder="TEL2例: 092-123-5678" maxlength="13">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="corporate_mail" class="col-sm-2 col-form-label">法人メールアドレス</label>
+    <div class="col-sm-10">
+      <input type="email" name="corporate_mail" id="corporate_mail" class="form-control" style="max-width: 30em;" value="{{ form_data.corporate_mail or '' }}" maxlength="30">
+    </div>
+  </div>
+</div>
+
+<!-- その他情報セクション -->
+<div class="form-section">
+  <h3 class="form-section-title">その他情報</h3>
+
+  <div class="row">
+    <label for="customer_rank" class="col-sm-2 col-form-label">顧客ランク</label>
+    <div class="col-sm-10" style="display: flex; gap: 8px; align-items: center;">
+      <input type="text" id="customer_rank" class="form-control" name="customer_rank" style="max-width: 10em;" value="{{ form_data.customer_rank or '' }}" maxlength="10">
+      <input type="text" id="customer_rankdetails" class="form-control" name="customer_rankdetails" value="{{ form_data.customer_rankdetails or '' }}" placeholder="ランク詳細">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="customer_remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="customer_remarks" id="customer_remarks" class="form-control"
+      rows="4" maxlength="200"
+      style="width: 100%; box-sizing: border-box;">{{ form_data.customer_remarks or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="registration_date" class="col-sm-2 col-form-label">登録日</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="registration_date" id="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" id="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" maxlength="20" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="update_date" class="col-sm-2 col-form-label">更新日</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="update_date" id="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" id="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" maxlength="20" readonly tabindex="-1">
+    </div>
+  </div>
+</div>
+

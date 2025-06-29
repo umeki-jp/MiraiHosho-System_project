@@ -1,103 +1,96 @@
 {% macro search_buttons(base_url, selected_limit="20", page=1, total_pages=1, total=0) %}
- <div class="search-buttons-row">
-  
-  <!-- ✅ ページネーション -->
-  <div class="search-pagination">
-    <span>【全{{ total }}件】</span>
-    {% set query_params = [] %}
-    {% for k, v in request.args.items() %}
-      {% if k != 'page' and k != 'limit' and v %}
-        {% set _ = query_params.append(k ~ '=' ~ v|urlencode) %}
-      {% endif %}
-    {% endfor %}
-    {% set base_query = query_params|join('&') %}
-    {% macro page_url(p) -%}
-      {{ base_url }}?page={{ p }}&limit={{ selected_limit }}{% if base_query %}&{{ base_query }}{% endif %}
-    {%- endmacro %}
+<div class="row mt-4 align-items-center search-controls">
 
-    {# --- 最初 --- #}
-    {% if page > 1 %}
-      <a href="{{ page_url(1) }}" class="page-nav">最初</a>
-    {% else %}
-      <span class="page-nav" style="color:#ccc;">最初</span>
-    {% endif %}
+  <div class="col-md-5">
+    <div class="d-flex align-items-center">
+      <span class="me-3 text-nowrap">【全{{ total }}件】</span>
+      <nav aria-label="Page navigation">
+        <ul class="pagination pagination-sm mb-0">
+          
+          {% set query_params = [] %}
+          {% for k, v in request.args.items() %}
+            {% if k != 'page' and k != 'limit' and v %}
+              {% set _ = query_params.append(k ~ '=' ~ v|urlencode) %}
+            {% endif %}
+          {% endfor %}
+          {% set base_query = query_params|join('&') %}
+          {% macro page_url(p) -%}
+            {{ base_url }}?page={{ p }}&limit={{ selected_limit }}{% if base_query %}&{{ base_query }}{% endif %}
+          {%- endmacro %}
 
-    {# --- 前へ --- #}
-    {% if page > 1 %}
-      <a href="{{ page_url(page - 1) }}" class="page-nav">前へ</a>
-    {% else %}
-      <span class="page-nav" style="color:#ccc;">前へ</span>
-    {% endif %}
+          {# --- 前へ --- #}
+          <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+            <a class="page-link" href="{{ page_url(page - 1) }}">前へ</a>
+          </li>
 
-    {# --- 数字部分 --- #}
-    {% set show_pages = [1, 2, 3] %}
-    {% if total_pages < 3 %}
-      {% set show_pages = range(1, total_pages + 1) %}
-    {% elif page == 1 %}
-      {% set show_pages = [1, 2, 3] %}
-    {% elif page == total_pages and total_pages > 2 %}
-      {% set show_pages = [total_pages - 2, total_pages - 1, total_pages] %}
-    {% else %}
-      {% set show_pages = [page - 1, page, page + 1] %}
-    {% endif %}
+          {# --- 数字部分 --- #}
+          {% set show_pages = [1, 2, 3] %}
+          {% if total_pages < 3 %}
+            {% set show_pages = range(1, total_pages + 1) %}
+          {% elif page == 1 %}
+            {% set show_pages = [1, 2, 3] %}
+          {% elif page == total_pages and total_pages > 2 %}
+            {% set show_pages = [total_pages - 2, total_pages - 1, total_pages] %}
+          {% else %}
+            {% set show_pages = [page - 1, page, page + 1] %}
+          {% endif %}
+          
+          {% for p in show_pages %}
+            {% if 1 <= p <= total_pages %}
+              <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{{ page_url(p) }}">{{ p }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
 
-    {% for p in show_pages %}
-      {% if 1 <= p <= total_pages %}
-        {% if p == page %}
-          <strong>{{ p }}</strong>
-        {% else %}
-          <a href="{{ page_url(p) }}">{{ p }}</a>
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-
-    {# --- 次へ --- #}
-    {% if page < total_pages %}
-      <a href="{{ page_url(page + 1) }}" class="page-nav">次へ</a>
-    {% else %}
-      <span class="page-nav" style="color:#ccc;">次へ</span>
-    {% endif %}
-
-    {# --- 最後 --- #}
-    {% if page < total_pages %}
-      <a href="{{ page_url(total_pages) }}" class="page-nav">最後</a>
-    {% else %}
-      <span class="page-nav" style="color:#ccc;">最後</span>
-    {% endif %}
+          {# --- 次へ --- #}
+          <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+            <a class="page-link" href="{{ page_url(page + 1) }}">次へ</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 
-  {# 🔹 検索ボタン・クリアボタン（中央） #}
-  <div class="search-buttons" style="text-align: center;">
-    <button type="submit" class="btn-search">検索</button>
-    <button type="button" class="btn-clear" onclick="clearForm()">クリア</button>
+  <div class="col-md-2 text-center">
+    <div class="d-grid gap-2 d-md-flex justify-content-center">
+      <button type="submit" class="btn btn-primary search-action-btn">検索</button>
+      <button type="button" class="btn btn-secondary search-action-btn" onclick="clearForm()">クリア</button>
+    </div>
   </div>
-  
-  {# 🔹 表示件数セレクト（右寄せ） #}
-  <div class="search-limit-wrapper" style="display: flex; align-items: center; gap: 4px;">
-    <label class="search-label">表示件数</label>
-    <select name="limit" class="search-input select-limit" style="width: 60px;">
-      {% for num in [20, 50, 100] %}
-      <option value="{{ num }}" {% if selected_limit == num|string %}selected{% endif %}>{{ num }}</option>
-      {% endfor %}
-    </select>
+
+  <div class="col-md-5 d-flex justify-content-end">
+    <div class="input-group input-group-sm" style="width: auto;">
+      <label class="input-group-text" for="limit-select">表示件数</label>
+      <select name="limit" id="limit-select" class="form-select form-select-sm">
+        {% for num in [20, 50, 100] %}
+        <option value="{{ num }}" {% if selected_limit == num|string %}selected{% endif %}>{{ num }}</option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
 </div>
+
+{# クリアボタン用のJavaScriptは変更不要なのでそのまま #}
 <script>
 function clearForm() {
-  const btn = event.target;
-  const form = btn.closest('form');
+  const form = document.querySelector('form[method="get"]');
   if (!form) return;
-  // input, select, textareaをすべて空に
-  form.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.type === 'checkbox' || el.type === 'radio') {
-      el.checked = false;
-    } else if (el.tagName === 'SELECT') {
-      el.selectedIndex = 0;
-    } else {
-      el.value = '';
+  
+  // limit以外の入力要素をクリア
+  form.querySelectorAll('input, select').forEach(el => {
+    if (el.name !== 'limit') {
+        if (el.type === 'checkbox' || el.type === 'radio') {
+            el.checked = false;
+        } else {
+            el.value = '';
+        }
     }
   });
+
+  // フォームを送信してクリアされた状態で再検索
+  form.submit();
 }
 </script>
 {% endmacro %}

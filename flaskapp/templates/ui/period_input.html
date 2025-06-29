@@ -1,9 +1,9 @@
-{# ui/period_input.html #}
+{# ui/period_input.html (修正後) #}
 {% macro period_input(label, name, request) %}
-  <div class="search-group">
-    <label class="search-label">{{ label }}</label>
-    <input type="date" name="{{ name }}_from" class="search-input" value="{{ request.args.get(name ~ '_from', '') }}">
-    〜
-    <input type="date" name="{{ name }}_to" class="search-input" value="{{ request.args.get(name ~ '_to', '') }}">
+  <div class="input-group input-group-sm">
+    <span class="input-group-text">{{ label }}</span>
+    <input type="date" name="{{ name }}_from" class="form-control" value="{{ request.args.get(name ~ '_from', '') }}">
+    <span class="input-group-text">〜</span>
+    <input type="date" name="{{ name }}_to" class="form-control" value="{{ request.args.get(name ~ '_to', '') }}">
   </div>
 {% endmacro %}

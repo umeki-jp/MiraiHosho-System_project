@@ -4,7 +4,7 @@
 {% block content %}
 
   <!-- 上部：新規登録ボタン -->
-  <div class="mb-4 d-flex justify-content-end">
+  <div class="mb-4 d-flex justify-content-start">
     <a href="{{ url_for('customerlist.customer_new') }}"
        class="btn btn-primary new-btn"
        onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
@@ -29,35 +29,47 @@
   {% set colspan = th_list | length %}
 
   <!-- 検索フォーム -->
-  <form method="get" class="search-form mb-4">
-    <div class="search-grid">
-      {{ ui.search_input("顧客cd", "customer_code", filters.customer_code or "") }}
-      {{ ui.search_input("名前", "name", filters.name or "") }}
-      {{ ui.search_input("名前ｶﾅ", "name_kana", filters.name_kana or "") }}
-      {{ ui.search_input("電話番号", "tel", filters.tel or "") }}
-      {{ ui.search_input("勤務先", "workplace", filters.workplace or "") }}
-      {{ ui.search_input("登録状況", "registration_status", filters.registration_status or "") }}
-    </div>
-    <div class="search-grid">
-      <div class="search-item">
-        <label class="search-label">登録日</label>
-        <input type="date" name="registration_date_from"
-               value="{{ filters.registration_date_from or '' }}" class="search-input">
-        <span>～</span>
-        <input type="date" name="registration_date_to"
-               value="{{ filters.registration_date_to or '' }}" class="search-input">
+  <form method="get" class="mb-4 p-3 border rounded bg-light">
+    <div class="row g-3">
+      {# 各検索項目をBootstrapの列(column)に入れる #}
+      <div class="col-md-4">
+        {{ ui.search_input("顧客cd", "customer_code", filters.customer_code or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("名前", "name", filters.name or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("名前ｶﾅ", "name_kana", filters.name_kana or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("電話番号", "tel", filters.tel or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("勤務先", "workplace", filters.workplace or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("登録状況", "registration_status", filters.registration_status or "") }}
+      </div>
+      <div class="col-md-6">
+        {# 日付範囲の入力欄はBootstrapのインプットグループを使うと綺麗にまとまる #}
+        <div class="input-group input-group-sm"> {# input-group-smを追加して全体を少し小さく #}
+            <span class="input-group-text">登録日</span>
+            <input type="date" name="registration_date_from" value="{{ filters.registration_date_from or '' }}" class="form-control" style="max-width: 150px;">
+            <span class="input-group-text">～</span>
+            <input type="date" name="registration_date_to" value="{{ filters.registration_date_to or '' }}" class="form-control" style="max-width: 150px;">
+        </div>
       </div>
     </div>
     {{ sc.search_buttons("/masters/customerlist", selected_limit, page, total_pages, total) }}
   </form>
 
   <!-- 一覧テーブル -->
-  <div class="scrollable-table" style="width: 100vw; min-width: 1200px; max-height: 70vh; overflow-y: auto; overflow-x: auto;">
-    <table class="app-table" style="width: 100%; min-width: 1200px; border-collapse: collapse; border: 1px solid #ccc;">
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm customer-list-table">
       <thead style="position: sticky; top: 0; z-index: 2; background: #fff;">
         <tr>
           {% for th in th_list %}
-            <th class="{{ th.class }}" style="border: 1px solid #ccc;">{{ th.label }}</th>
+            <th class="{{ th.class }}">{{ th.label }}</th>
           {% endfor %}
         </tr>
       </thead>
@@ -65,28 +77,28 @@
         {% if customers %}
           {% for c in customers %}
             <tr>
-              <td class="col-select text-center" style="border: 1px solid #ccc;">
+              <td class="col-select text-center">
                 <a href="{{ url_for('customerlist.customer_edit', customer_code=c.customer_code) }}"
-                   class="btn btn-sm btn-outline-primary"
-                   onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
-                  選択
-                </a>
+                class="select-link"
+                onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                選択
+              </a>
               </td>
-              <td class="col-status" style="border: 1px solid #ccc;">
+              <td class="col-status">
                 {{ status_map.get(c.registration_status, '不明') }}
               </td>
-              <td class="col-code" style="border: 1px solid #ccc;">{{ c.customer_code or '' }}</td>
-              <td class="col-customer" style="border: 1px solid #ccc;">{{ c.name or '' }}</td>
-              <td class="col-customer" style="border: 1px solid #ccc;">{{ c.name_kana or '' }}</td>
-              <td class="col-date" style="border: 1px solid #ccc;">{{ c.individual_birthDate or '' }}</td>
-              <td class="col-type" style="border: 1px solid #ccc;">{{ c.typeofcustomer or '' }}</td>
-              <td class="col-rank" style="border: 1px solid #ccc;">{{ c.customer_rank or '' }}</td>
-              <td class="col-date" style="border: 1px solid #ccc;">{{ c.registration_date or '' }}</td>
+              <td class="col-code">{{ c.customer_code or '' }}</td>
+              <td class="col-customer">{{ c.name or '' }}</td>
+              <td class="col-customer">{{ c.name_kana or '' }}</td>
+              <td class="col-date">{{ c.individual_birthDate or '' }}</td>
+              <td class="col-type">{{ c.typeofcustomer or '' }}</td>
+              <td class="col-rank">{{ c.customer_rank or '' }}</td>
+              <td class="col-date">{{ c.registration_date or '' }}</td>
             </tr>
           {% endfor %}
         {% else %}
           <tr>
-            <td colspan="{{ colspan }}" class="text-center text-muted" style="border: 1px solid #ccc;">
+            <td colspan="{{ colspan }}" class="text-center text-muted">
               該当する顧客がありません。
             </td>
           </tr>

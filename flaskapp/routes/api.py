@@ -1,0 +1,82 @@
+# flaskapp/routes/api.py
+
+from flask import Blueprint, jsonify, request
+import mysql.connector
+from mysql.connector import errorcode
+
+# 'api'という名前のブループリントを作成
+# url_prefix='/api' を設定すると、このファイル内のルートはすべて自動で /api から始まるURLになります
+api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# --- MySQL接続設定 ---
+# ご自身の環境に合わせて設定を変更してください
+DB_CONFIG = {
+    'user': 'root',
+    'password': 'mirai',
+    'host': '127.0.0.1',
+    'database': 'miraihosho_system'
+}
+
+# --- APIのルート定義 ---
+# URLは /search_address_by_postal となります (url_prefixと結合される)
+@api_bp.route('/search_address_by_postal')
+def search_address_by_postal():
+    """郵便番号から住所を検索するAPI"""
+    postal_code = request.args.get('postal_code', '')
+
+    if not postal_code or not postal_code.isdigit():
+        return jsonify({'error': '無効な郵便番号です'}), 400
+
+    conn = None
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM postal_codes WHERE postal_code = %s"
+        cursor.execute(query, (postal_code,))
+        results = cursor.fetchall()
+        return jsonify(results)
+    except mysql.connector.Error as err:
+        return jsonify({'error': f'データベースエラー: {err}'}), 500
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+@api_bp.route('/search_postal_by_address')
+def search_postal_by_address():
+    """住所から郵便番号を検索するAPI"""
+    prefecture = request.args.get('prefecture', '')
+    city = request.args.get('city', '')
+    town = request.args.get('town', '')
+
+    if not prefecture and not city and not town:
+        return jsonify({'error': '少なくとも一つの検索条件を指定してください'}), 400
+
+    conn = None
+    try:
+        conn = mysql.connector.connect(**DB_CONFIG)
+        cursor = conn.cursor(dictionary=True)
+        query_parts = []
+        params = []
+
+        if prefecture:
+            query_parts.append("prefecture = %s")
+            params.append(prefecture)
+        if city:
+            query_parts.append("city LIKE %s")
+            params.append(f"%{city}%")
+        if town:
+            query_parts.append("town LIKE %s")
+            params.append(f"%{town}%")
+
+        base_query = "SELECT * FROM postal_codes WHERE "
+        full_query = base_query + " AND ".join(query_parts) + " LIMIT 100"
+        cursor.execute(full_query, tuple(params))
+        results = cursor.fetchall()
+        return jsonify(results)
+    except mysql.connector.Error as err:
+        return jsonify({'error': f'データベースエラー: {err}'}), 500
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()

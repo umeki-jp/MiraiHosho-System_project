@@ -1,8 +1,8 @@
 /* フォーム全体の基本的な設定 */
 .form-container {
-        font-family: sans-serif;
-        max-width: 900px; /* フォームの最大幅 */
-        margin: 0rem ; /* 左揃え */
+    font-family: sans-serif;
+    max-width: 1200px; /* フォームの最大幅 */
+    margin: 0rem; /* 左揃え */
 }
 
 /* ブロック全体を囲むコンテナ */
@@ -21,51 +21,6 @@
     margin-bottom: 1rem;
 }
 
-/* 入力行（ラベル + 入力欄）のコンテナ */
-.form-row {
-    display: flex; /* 横並びにするための設定 */
-    margin-bottom: -1px; /* 境界線を重ねる */
-}
-
-/* 左側のラベル部分のスタイル */
-.form-label-cell {
-    background-color: #274472; /* 背景を濃い紺色に */
-    color: white;             /* 文字を白に */
-    font-weight: normal;
-    padding: 0.4rem 1rem;
-    border: 1px solid rgba(124, 124, 124, 0.973);    /* 境界線を白に */
-    width: 200px;             /* 横幅を共通に（ここで調整） */
-    flex-shrink: 0;           /* 幅が縮まないようにする */
-    display: flex;
-    align-items: center;      /* 文字を上下中央に配置 */
-}
-
-/* 右側の入力欄部分のスタイル */
-.form-input-cell {
-    flex-grow: 1;             /* 残りの幅をすべて使う */
-    background-color: #e0f7fa; /* 背景を薄い水色に */
-    border: 1px solid  rgba(124, 124, 124, 0.973); /* 境界線を紺色に */
-    padding: 0.3rem 0.5rem;
-    display: flex;
-    align-items: center;
-}
-
-/* 入力欄（input, selectなど）の共通スタイル */
-.form-input {
-    padding: 0.4rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* paddingを含めて幅を計算 */
-}
-        
-/* 親要素の幅に関わらず、指定した幅を維持します */
-.input-w-hankaku-5  { width: 5em; }   /* 半角5字程度の幅 */
-.input-w-hankaku-10 { width: 10em; }   /* 半角10字程度の幅 */
-.input-w-hankaku-15 { width: 15em; }  /* 半角15字程度の幅 */
-.input-w-hankaku-20 { width: 20em; }  /* 全角10字程度の幅 */
-.input-w-hankaku-40 { width: 40em; }  /* 全角20字程度の幅 */
-.input-w-full { width: 100%; }
-
 .type-option {
     flex: 1;
     display: flex;
@@ -82,7 +37,7 @@
 }
 
 .type-option.active {
-    background: #274472;      /* 単色の紺色 */
+    background: #274472; /* 単色の紺色 */
     color: #fff;
     border: 2px solid #274472;
     box-shadow: none;
@@ -93,74 +48,9 @@
     margin-right: 0;
 }
 
-/* 住所入力セル全体のレイアウトを縦並び・左詰めに設定 */
-.form-input-cell-address {
-    flex-direction: column;  /* 中の要素(各行)を縦に並べる */
-    align-items: flex-start; /* ★★★中の要素を左詰めに変更（中央揃えを上書き）★★★ */
-    gap: 5px;                /* 各行の間の隙間を5pxに設定 */
-    padding: 0.5rem;         /* 見た目を整えるためにパディングを少し調整 */
-}
-
-/* 都道府県と市区町村を横並びにするための設定（既存のものを流用） */
-.address-row-inline {
-    display: flex;
-    gap: 10px;
-    
-}
-
-
-
-
-.address-lookup-btn {
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    height: 44px;
-}
-
-.address-lookup-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-}
-
-
-
-.required {
-    color: #e74c3c;
-    margin-left: 4px;
-}
-
-
-
-input[type="text"]:focus,
-input[type="date"]:focus,
-input[type="number"]:focus,
-input[type="email"]:focus,
-select:focus,
-textarea:focus {
-    outline: none;
-    border-color: #4facfe;
-    box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-    transform: translateY(-2px);
-}
-
 .form-control-plaintext {
     background: #f8f9fa !important;
     color: #6c757d;
-    cursor: not-allowed;
-}
-
-select {
-    cursor: pointer;
-}
-
-select:disabled {
     cursor: not-allowed;
 }
 
@@ -177,8 +67,6 @@ textarea {
     height: 50px;
 }
 
-
-
 .conditional-section {
     opacity: 0.5;
     pointer-events: none;
@@ -188,48 +76,6 @@ textarea {
 .conditional-section.active {
     opacity: 1;
     pointer-events: all;
-}
-
-.form-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 1px solid #e1e8ed;
-}
-
-.btn {
-    padding: 15px 30px;
-    border: none;
-    border-radius: 10px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-    transform: translateY(-2px);
 }
 
 .status-badge {
@@ -242,50 +88,6 @@ textarea {
     color: #1976d2;
 }
 
-@media (max-width: 1024px) {
-    .form-row-4 { grid-template-columns: 1fr 1fr; }
-    .address-group { 
-        grid-template-columns: 1fr 1fr; 
-    }
-    
-    .postal-input-group {
-        grid-column: 1 / -1;
-        max-width: 250px;
-    }
-}
-
-@media (max-width: 768px) {
-    .form-content {
-        padding: 20px;
-    }
-    
-    .form-row-2,
-    .form-row-3,
-    .form-row-4 {
-        grid-template-columns: 1fr;
-    }
-    
-    .address-group {
-        grid-template-columns: 1fr;
-    }
-    
-    .postal-input-group {
-        max-width: 100%;
-    }
-    
-    .form-actions {
-        flex-direction: column;
-    }
-    
-    .btn {
-        width: 100%;
-    }
-}
-
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -295,4 +97,76 @@ textarea {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* ▼▼▼ 以下をstyleタグの一番下に追加 ▼▼▼ */
+
+/* --- フォームのカスタムカラーテーマ --- */
+
+/* 行全体を囲む枠線を設定（③枠線の設定）*/
+.form-theme-custom .row.mb-3 {
+    border: 1px solid #ced4da; /* Bootstrapの標準的なグレー枠線 */
+    border-radius: 0.375rem; /* Bootstrapの標準的な角丸 */
+    overflow: hidden; /* 中の要素が角丸からはみ出ないように */
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* 行全体のスタイル */
+.form-theme-custom .row {
+    /* ④ 入力欄の後ろの背景を薄い水色に */
+    background-color: #e0f7fa;
+    border: 1px solid #ced4da;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* ① 同じセクション内の枠の間をなくす */
+/* 2行目以降の行の上マージンを-1pxして、枠線を重ねる */
+.form-theme-custom .row + .row {
+    margin-top: -1px;
+}
+
+/* ① ラベル部分のスタイル */
+.form-theme-custom .col-form-label {
+    background-color: #274472; /* 紺色 */
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #ced4da;
+    flex: 0 0 180px; 
+}
+
+/* ② 入力欄部分のスタイル */
+.form-theme-custom .form-control,
+.form-theme-custom .form-select {
+    /* ④ 入力欄の中の色は白に */
+    background-color: white;
+    border: none;
+    border-radius: 0;
+}
+
+/* 入力欄がフォーカスされた時のスタイル（青い影を消す） */
+.form-theme-custom .form-control:focus,
+.form-theme-custom .form-select:focus {
+    box-shadow: none;
+}
+
+/* 読み取り専用(readonly)の入力欄の背景色は上書き */
+.form-theme-custom .form-control:read-only {
+    background-color: #f0f0f0 !important;
+}
+
+/* 住所入力欄のような複数行になるコンテナの背景色 */
+.form-theme-custom .form-input-cell-address {
+    background-color: #e0f7fa;
+    padding: 0.75rem;
+}
+
+/* 入力欄のコンテナ（右側の列）に上下の余白を追加 */
+.form-theme-custom .row > div[class*='col-']:not(.col-form-label) {
+    padding-top: 0.3rem; /* 上の余白 (8px相当) */
+    padding-bottom: 0.3rem; /* 下の余白 (8px相当) */
+    flex: 1;
 }

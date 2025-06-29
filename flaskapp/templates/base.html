@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}管理画面{% endblock %}</title>
   
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='ui/form_page_base.css') }}">
+
   <style>
     /* --- 全体のリセットと基本設定 --- */
     * {
@@ -90,11 +93,13 @@
     }
 
     .sidebar ul {
-      list-style: none;
+      list-style: none; /* リストの黒丸を非表示 */
+      margin: 0;
+      padding: 0;       /* ★ Bootstrapによる余白をリセット（重要）*/
     }
 
     .sidebar li {
-      margin-bottom: 10px;
+      margin-bottom: 0; /* ボタンの間隔はaタグのpaddingで調整するため不要に */
     }
 
     .sidebar a {
@@ -105,6 +110,7 @@
       color: white;
       text-decoration: none;
       transition: background-color 0.3s;
+      width: 100%;
     }
 
     .sidebar a.active,
@@ -134,10 +140,26 @@
     /* --- サブメニュー（子メニュー） --- */
     .submenu {
       display: none;
-      margin-left: 10px;
+      background-color: #0b223c;
+      /* 親メニューとの隙間をpaddingで確保 */
+      padding-top: 8px;
+      /* 子メニュー群の下にもバランスよく余白を設ける */
+      padding-bottom: 8px;
     }
 
+    /* 子メニューの各項目の「下」に隙間を設ける */
+    .submenu li {
+      margin-bottom: 4px; /* 子メニュー間の隙間 */
+    }
+
+    /* 見た目の調整：子メニューの最後の項目だけ、下の隙間をなくす */
+    .submenu li:last-child {
+      margin-bottom: 0;
+    }
+
+    /* サブメニューのリンクのスタイル */
     .submenu a {
+      padding-left: 25px; /* 左側に余白を持たせて階層を表現 */
       background-color: #314e78;
       font-size: 14px;
     }
@@ -212,181 +234,17 @@
   }
 
     /* --- 検索フォーム関連 --- */
-  .search-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    margin-top: 24px;
-    margin-bottom: 20px;
-  }
+  
 
-  .search-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);  /* 最大4列 */
-    gap: 12px 16px;
-  }
+  
 
-  @media (max-width: 960px) {
-    .search-grid {
-      grid-template-columns: repeat(3, 1fr);  /* 中サイズ画面で3列 */
-    }
-  }
+  
+  
 
-  @media (max-width: 720px) {
-    .search-grid {
-      grid-template-columns: repeat(2, 1fr);  /* スマホなどで2列 */
-    }
-  }
+  
 
-  @media (max-width: 480px) {
-    .search-grid {
-      grid-template-columns: 1fr;             /* 極小画面で1列縦並び */
-    }
-  }
-
-  .search-group {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .search-label {
-    width: 6em;  /* 日本語8文字相当 */
-    text-align: center;
-    margin-right: 6px;
-    white-space: nowrap;
-    font-size: 13px;
-    color: #000;
-  }
-
-  .search-input {
-    width: 100%;          /* ← フレックス内で広がる */
-    min-width: 100px;
-    max-width: 100%;
-    flex: 1 1 auto;       /* ← ラベルとのバランスに応じて伸縮可能に */
-  }
-
-  @media (max-width: 640px) {
-    .search-group {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .search-label {
-      text-align: left;
-      margin-bottom: 2px;
-    }
-  }
-
-  .search-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  /* --- 検索ボタン・クリアボタン --- */
-  .search-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 12px;
-  }
-
-  .search-buttons .btn-search,
-  .search-buttons .btn-clear {
-    width: 120px;         /* ← お好きな幅に調整OK（例：120px） */
-    padding: 8px 0;
-    font-size: 14px;
-    border: none;
-    border-radius: 4px;
-    text-align: center;
-  }
-
-  .btn-search {
-    background-color: #2e7d32; /* 濃緑 */
-    color: #fff;
-    border: none;
-    padding: 6px 16px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .btn-clear {
-    background-color: #c62828; /* 朱色 */
-    color: #fff;
-    border: none;
-    padding: 6px 16px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  .btn-search:hover {
-    background-color: #1b4d1e; /* より深い緑：#2e7d32 → #1b4d1e */
-    opacity: 1;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-  }
-
-  .btn-clear:hover {
-    background-color: #7d1515; /* より濃い朱色：#c62828 → #7d1515 */
-    opacity: 1;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-  }
-
-  .search-buttons-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: baseline;
-    gap: 16px;
-    margin-top: 16px;
-  }
-
-  .search-pagination {
-    display: flex;
-    align-items: flex-end;
-    font-size: 13px;    /* 他のフォーム要素に合わせる */
-    height: 28px;       /* ボタンやセレクトと縦位置を揃える */
-    line-height: 1.4;
-    align-items: baseline;
-  }
-
-  .search-pagination span {
-    display: inline-block;
-    line-height: 1;
-    padding-bottom: 2px;  /* ←  ボタンとセレクトと下揃え */
-  }
-
-  .search-buttons {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    flex-grow: 1;
-    align-items: baseline;
-  }
-
-  .search-limit-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    align-items: baseline;
-  }
-
-  .select-limit {
-    width: 48px !important;
-    min-width: 48px;
-    max-width: 60px;
-    padding-right: 0;
-  }
-
-  /* --- 検索件数セレクトボックス --- */
-  .search-limit-wrapper label {
-    font-size: 13px;
-    margin-bottom: 0;
-  }
+  
+  
 
   /* --- テーブルセルの省略表示 --- */
   .table-cell-content {
@@ -406,17 +264,6 @@
       -webkit-line-clamp: 2;
       line-clamp: 2;
     }
-  }
-
-  /* --- テーブルの横スクロール --- */
-  .scrollable-table {
-    overflow-x: auto;
-    max-width: 100%;
-  }
-
-  /* --- テキスト中央寄せ --- */
-  .text-center {
-    text-align: center;
   }
 
 /* --- テーブル列幅固定（選択列・区分） --- */
@@ -462,12 +309,12 @@
     text-align: center;
   }
 
-  /* --- 検索結果テーブル列幅（日付）を半角10字幅で固定 --- */
+  /* --- 検索結果テーブル列幅（日付）を半角12字幅で固定 --- */
   th.col-date,
   td.col-date {
-    width: 10ch;
-    min-width: 10ch;
-    max-width: 10ch;
+    width: 12ch;
+    min-width: 12ch;
+    max-width: 12ch;
     text-align: center;
     font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
     white-space: nowrap;
@@ -486,32 +333,6 @@
     text-overflow: ellipsis;
   }
 
-  .app-table {
-  border-collapse: collapse;
-  width: 100%;
-  table-layout: fixed;
-  font-size: 13px;
-  color: #000;
-}
-
-.app-table th,
-.app-table td {
-  border: 1px solid #ccc;
-  padding: 4px 8px; /* 縦横の余白を狭く */
-  font-size: 0.95em;
-  word-break: break-word;
-  font-weight: normal;
-}
-
-.app-table th {
-  background-color: #88cc88;
-  color: #000;
-  text-align: center;
-}
-
-.app-table tbody tr {
-  background-color: #eef8ee;
-}
 
 .d-flex {
   display: flex;
@@ -584,12 +405,78 @@
   border: 1px solid #222 !important;
 }
 
+/* ▼▼▼ ここから顧客一覧テーブル用のカスタムスタイルを追加 ▼▼▼ */
+
+/* テーブル全体の文字サイズを調整 */
+.customer-list-table {
+  font-size: 13px;
+}
+
+/* ① ヘッダーの文字を太字にしない */
+/* ③ ヘッダーの背景色を緑に */
+.customer-list-table thead th {
+  font-weight: normal;
+  background-color: #88cc88;
+  color: #000;
+  border-color: #ccc !important; /* Bootstrapのボーダー色を上書き */
+}
+
+/* データ行の背景色（Bootstrapのスタイルを上書きするため、セレクタをより具体的に変更） */
+.table.customer-list-table tbody tr {
+  background-color: #eef8ee;
+}
+
+/* ホバー色（こちらも同様にセレクタを具体的に変更）*/
+.table.customer-list-table tbody tr:hover {
+  background-color: #dcf0dc;
+}
+
+/* ④ 選択ボタンを下線付きリンクにするためのスタイル */
+.customer-list-table .select-link {
+  /* ▼▼▼ ボタンに見えるスタイルを強制的にリセット ▼▼▼ */
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  
+  /* ▼▼▼ 文字と下線のスタイルを再設定 ▼▼▼ */
+  color:rgb(6, 74, 175) !important; /* リンクの青色 */
+  text-decoration: underline !important; /* 下線 */
+  
+  /* ▼▼▼ テーブルの文字サイズに合わせる ▼▼▼ */
+  font-size: inherit;
+}
+/* ▲▲▲ ここまで追加 ▲▲▲ */
+
+.content form .input-group-text {
+  min-width: 100px; /* 全角5～6文字分を想定した幅に調整 */
+  justify-content: center;
+}
+
+/* 検索・クリアボタンの幅を調整 */
+.search-action-btn {
+  width: 140px; /* ← 横幅をさらに広げました (調整してください) */
+  padding-top: 0.3rem !important; /* 上下のpaddingを小さく */
+  padding-bottom: 0.3rem !important;
+  line-height: 1.5; /* 行の高さを調整 */
+  white-space: nowrap; /* 文字を折り返さない */
+}
+
+/* 小さめのボタンサイズを強制 (Bootstrapのbtn-smよりもさらに小さくする場合) */
+.search-action-btn.btn-sm { /* 既存のbtn-smクラスと組み合わせることも可能 */
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.search-controls {
+  font-size: 0.875rem; /* 14px相当。お好みで調整してください */
+}
+
   </style>
   {% block head_extra %}{% endblock %}
   {% block head %}{% endblock %}
-
   
 </head>
+
 <body>
   <!-- 上部ヘッダー -->
   <header class="topbar">
@@ -633,13 +520,15 @@
     </nav>
   {% endif %}
 
-  <main class="content">
+  <main class="content container mt-4">
     <div id="main-view">
       {% block content %}{% endblock %}
     </div>
   </main>
 
 </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
     // menuDataの先頭にTOPを追加
@@ -782,4 +671,6 @@
   </script>
   {% block script %}{% endblock %}
 </body>
+
+<script src="{{ url_for('static', filename='js/form_page_base.js') }}"></script>
 </html>

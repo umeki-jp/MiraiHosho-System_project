@@ -251,6 +251,9 @@ def customer_new():
                     datetime_fields = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
                     integer_fields = ["individual_age"]
                     form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                    form_data['registration_date'] = datetime.datetime.now() # 登録日を現在時刻に設定
+                    form_data['update_date'] = None # 更新日はNULLに設定
+                    
                     values = [customer_code]
                     for f in field_names:
                         val = form_data.get(f, "")
@@ -327,59 +330,39 @@ def customer_edit(customer_code):
                 # ▼▼▼ 修正 ▼▼▼ (スクリーンショットの問題を解決するための新しい比較ロジック)
                 changes = []
                 field_labels = get_field_labels()
-                date_field_keys = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
+
+                # フィールドの種別を定義
+                datetime_local_fields = ["registration_date", "update_date"]
+                yyyymmdd_fields = ["individual_birthDate", "corporate_foundationdate"]
 
                 for field in field_names:
-                    before_val = before_data.get(field) # 元の値 (日付オブジェクトなど)
-                    after_val = form_data.get(field)   # フォームからの値 (文字列)
+                    before_val = before_data.get(field)
+                    after_val = form_data.get(field, '') # キーが存在しない場合も考慮し、デフォルト値を空文字に
 
-                    # --- ステップ1: 比較のために値を正規化 ---
-                    # 比較を正確に行うため、両方の値を同じ「YYYY-MM-DD」形式の文字列に揃える
-                    before_normalized = ""
-                    if isinstance(before_val, (datetime.date, datetime.datetime)):
-                        before_normalized = before_val.strftime('%Y-%m-%d')
+                    # 比較のために、両方の値を文字列に正規化する
+                    before_str = ""
+                    after_str = str(after_val)
+
+                    # before_val (DBからの値) をフィールドの種別に応じて文字列に変換
+                    if field in datetime_local_fields:
+                        if isinstance(before_val, datetime.datetime):
+                            # 「YYYY-MM-DDTHH:MM」形式に変換
+                            before_str = before_val.strftime('%Y-%m-%dT%H:%M')
+                    elif field in yyyymmdd_fields:
+                        if isinstance(before_val, datetime.date):
+                            # 「YYYYMMDD」形式に変換
+                            before_str = before_val.strftime('%Y%m%d')
                     elif before_val is not None:
-                        before_normalized = str(before_val)
+                        # その他のフィールドは単純に文字列に変換
+                        before_str = str(before_val)
 
-                    after_normalized = ""
-                    if after_val:
-                        try:
-                            if field in ['individual_birthDate', 'corporate_foundationdate']:
-                                # 8桁数字ならYYYYMMDDとして扱う
-                                if len(after_val) == 8 and after_val.isdigit():
-                                    after_normalized = datetime.datetime.strptime(after_val, '%Y%m%d').strftime('%Y-%m-%d')
-                                elif '-' in after_val:
-                                    after_normalized = after_val
-                                else:
-                                    after_normalized = after_val
-                            elif field in date_field_keys:
-                                after_normalized = after_val
-                            else:
-                                after_normalized = after_val
-                        except (ValueError, TypeError):
-                            after_normalized = after_val # 解析失敗時は元の文字列のまま
-
-                    # --- ステップ2: 正規化した値で比較を実行 ---
-                    if before_normalized != after_normalized:
-                        # --- ステップ3: 変更がある場合のみ、表示用の値を作成 ---
-                        # 表示の際は、ユーザーの入力形式に合わせる
-                        before_display = ""
-                        if isinstance(before_val, (datetime.date, datetime.datetime)):
-                            # 生年月日は、表示も「YYYYMMDD」形式に統一する
-                            if field == 'individual_birthDate':
-                                before_display = before_val.strftime('%Y%m%d')
-                            else:
-                                before_display = before_val.strftime('%Y-%m-%d')
-                        elif before_val is not None:
-                            before_display = str(before_val)
-
+                    # 変更があったか比較
+                    if before_str != after_str:
                         changes.append({
                             "label": field_labels.get(field, field),
-                            "before": before_display,
-                            "after": after_val if after_val is not None else ""
-                        })
-                # ▲▲▲ 修正 ▲▲▲ (新しい比較ロジックここまで)       changes.append({"label": field_labels.get(field, field), "before": before_value, "after": after_value})
-                
+                            "before": before_str,
+                            "after": after_str
+                        })                
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
@@ -392,27 +375,37 @@ def customer_edit(customer_code):
             elif action == "submit_update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 with conn.cursor() as cursor:
-                    datetime_fields = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
+                    datetime_fields = ["individual_birthDate", "corporate_foundationdate"] # 登録/更新日時はサーバーで設定するため除外
                     integer_fields = ["individual_age"]
+                    
+                    # 更新するカラムと値を動的に作成
+                    update_parts = []
                     values = []
+                    
+                    # フォームから送信された値をセット
                     for f in field_names:
+                        # 登録/更新日時はフォームの値を使わない
+                        if f in ["registration_date", "registration_shain", "update_date", "update_shain"]:
+                            continue
+                        
                         val = form_data.get(f, "")
                         if (f in datetime_fields or f in integer_fields) and val == "":
                             values.append(None)
                         else:
                             values.append(val)
+                        update_parts.append(f"{f} = %s")
 
-                # 各項目のUPDATE文を生成
-                    update_clause = ", ".join(f"{col} = %s" for col in field_names)
+                    # 更新日時と更新者をサーバー側で設定
+                    update_parts.append("update_date = %s")
+                    values.append(datetime.datetime.now())
                     
-                    # ステータスを更新する処理を追加
-                    update_clause += ", registration_status = %s"
-                    values.append(1) # 値として「1: 登録済」を追加
-                    
-                    # WHERE句のための顧客コードを追加
+                    update_parts.append("update_shain = %s")
+                    values.append("admin") # 仮の更新者ID。将来的にはログインユーザーIDをセット
+
+                    # WHERE句のための顧客コードを最後に追加
                     values.append(customer_code)
 
-                    sql = f"UPDATE ms01_customerlist SET {update_clause} WHERE customer_code = %s"
+                    sql = f"UPDATE ms01_customerlist SET {', '.join(update_parts)} WHERE customer_code = %s"
                     cursor.execute(sql, values)
                     conn.commit()
                 return render_template("shared/action_done.html", action_label="更新")
@@ -463,19 +456,16 @@ def customer_edit(customer_code):
         if customer.get('registration_status') is not None:
             customer['registration_status'] = int(customer['registration_status'])
 
-        # ▼▼▼ 修正 ▼▼▼ (ここから日付の表示形式を修正)
-        date_fields_to_format = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
-        for field in date_fields_to_format:
+        for field in ["individual_birthDate", "corporate_foundationdate"]:
             if customer.get(field) and isinstance(customer.get(field), (datetime.date, datetime.datetime)):
-                # 生年月日・設立年月日はYYYYMMDD形式、それ以外はYYYY-MM-DD形式でフォーマット
-                if field in ["individual_birthDate", "corporate_foundationdate"]:
-                    customer[field] = customer[field].strftime('%Y%m%d')
-                else:
-                    customer[field] = customer[field].strftime('%Y-%m-%d')
-            # 追加: 文字列でYYYY-MM-DD形式の場合もYYYYMMDDに変換
-            elif field in ["individual_birthDate", "corporate_foundationdate"] and isinstance(customer.get(field), str) and '-' in customer.get(field):
+                customer[field] = customer[field].strftime('%Y%m%d')
+            elif isinstance(customer.get(field), str) and '-' in customer.get(field):
                 customer[field] = customer[field].replace('-', '')
-        # ▲▲▲ 修正 ▲▲▲ (日付の表示形式の修正ここまで)
+
+        for field in ["registration_date", "update_date"]:
+            if customer.get(field) and isinstance(customer.get(field), (datetime.date, datetime.datetime)):
+                # datetime-local の形式 'YYYY-MM-DDTHH:MM' に合わせる
+                customer[field] = customer[field].strftime('%Y-%m-%dT%H:%M')
 
         for key, value in customer.items():
             if value is None:

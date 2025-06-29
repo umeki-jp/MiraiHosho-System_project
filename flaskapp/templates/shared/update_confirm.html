@@ -3,26 +3,29 @@
 
 {% block main_content %}
   <div class="confirmation-section">
-    {# Pythonから渡される is_approval_flow フラグでメッセージを分岐します #}
-    {% if is_approval_flow %}
-      <p class="mb-3">以下の内容で変更を申請します。承認者を選択してください。</p>
-    {% else %}
-      <p class="mb-3">以下の内容で情報を更新します。よろしいですか？</p>
-    {% endif %}
+    {# メッセージ #}
+    <div class="alert alert-info" role="alert">
+      {% if is_approval_flow %}
+        <p class="mb-0">以下の内容で変更を申請します。承認者を選択してください。</p>
+      {% else %}
+        <p class="mb-0">以下の内容で情報を更新します。よろしいですか？</p>
+      {% endif %}
+    </div>
 
-    <table class="table my-4 update-confirm-table">
-      <thead>
+    {# 変更内容テーブル #}
+    <table class="table table-bordered table-sm my-4">
+      <thead class="table-light">
         <tr>
-          <th class="col-label">項目</th>
-          <th class="col-before">変更前</th>
-          <th class="col-after">変更後</th>
+          <th class="col-label" style="width: 25%;">項目</th>
+          <th class="col-before" style="width: 37.5%;">変更前</th>
+          <th class="col-after" style="width: 37.5%;">変更後</th>
         </tr>
       </thead>
       <tbody>
         {% for change in changes %}
           <tr>
             <td class="col-label">{{ change.label }}</td>
-            <td class="col-before">{{ change.before or '' }}</td>
+            <td class="col-before text-muted">{{ change.before or '' }}</td>
             <td class="col-after"><strong>{{ change.after or '' }}</strong></td>
           </tr>
         {% endfor %}
@@ -31,99 +34,42 @@
   </div>
 
   <form method="POST" action="{{ submit_url }}">
-    {# 変更後のデータを非表示で保持します #}
+    {# 変更後のデータを非表示で保持 #}
     {% for key, value in form_data.items() %}
       <input type="hidden" name="{{ key }}" value="{{ value or '' }}">
     {% endfor %}
 
-    {# 承認フローの場合のみ、承認者ドロップダウンを表示します #}
+    {# 承認フローの場合のみ、承認者ドロップダウンを表示 #}
     {% if is_approval_flow %}
-    <div class="form-group my-4">
-        <label for="approver" class="form-label"><strong>承認者</strong> <span class="required">*</span></label>
-        <select name="approver_id" id="approver" class="form-select" required style="max-width: 300px; width: 100%; padding-top: 0.5rem; padding-bottom: 0.5rem; height: auto;">
-            <option value="">選択してください</option>
-            {% for approver in approvers %}
-                <option value="{{ approver.shain_code }}">{{ approver.shain_name }}</option>
-            {% endfor %}
-        </select>
+    <div class="row justify-content-center my-4">
+      <div class="col-md-6">
+        <div class="input-group">
+          <label for="approver" class="input-group-text"><strong>承認者 <span class="text-danger">*</span></strong></label>
+          <select name="approver_id" id="approver" class="form-select" required style="width: 20em;">
+              <option value="">選択してください</option>
+              {% for approver in approvers %}
+                  <option value="{{ approver.shain_code }}">{{ approver.shain_name }}</option>
+              {% endfor %}
+          </select>
+        </div>
+      </div>
     </div>
+    {% else %}
+      <input type="hidden" name="action" value="{{ final_action_value }}">
     {% endif %}
 
-    <div class="form-action-btns mt-4">
-      {# ボタンのvalue属性を、Pythonから渡される値に設定します #}
-      <button type="submit" name="action" value="{{ final_action_value }}" class="form-action-btn">
-        {# ボタンの表示テキストも、承認フローかどうかで分岐させます #}
-        {% if is_approval_flow %}
-          更新申請する
-        {% else %}
-          更新する
-        {% endif %}
-      </button>
-      <button type="button" class="form-action-btn btn-negative" onclick="history.back()">戻る</button>
+    {# ボタン #}
+    <div class="text-center mt-4">
+      <div class="d-inline-flex gap-2">
+        <button type="submit" name="action" value="{{ final_action_value }}" class="btn btn-primary">
+          {% if is_approval_flow %}
+            更新申請する
+          {% else %}
+            更新する
+          {% endif %}
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="history.back()">戻る</button>
+      </div>
     </div>
   </form>
-{% endblock %}
-
-{% block head %}
-  {{ super() }}
-  <style>
-    /* テーブル全体の外枠を太く */
-    table.update-confirm-table {
-      border-collapse: separate;
-      border-spacing: 0;
-      border: 4px solid #e57373;
-      width: auto;
-      min-width: 50%;
-      background: #fff5f5;
-      table-layout: auto;
-      margin-right: auto;
-    }
-    /* ヘッダー行 */
-    table.update-confirm-table th {
-      background: #ffeaea;
-      font-weight: bold;
-      border-bottom: 1.5px solid #e57373;
-      border-right: 1.5px solid #e57373;
-      padding: 10px 14px;
-      text-align: left;
-      white-space: nowrap;
-      font-size: 0.8em;
-    }
-    table.update-confirm-table th:last-child {
-      border-right: 1.5px solid #e57373;
-    }
-    /* データ行 */
-    table.update-confirm-table td {
-      background: #fff5f5;
-      border-bottom: 1px solid #e57373;
-      border-right: 1px solid #e57373;
-      padding: 10px 14px;
-      font-weight: normal;
-      word-break: break-all;
-      max-width: 400px;
-      font-size: 0.8em;
-    }
-    table.update-confirm-table td:last-child {
-      border-right: 1.5px solid #e57373;
-    }
-    /* 最終行の下枠を太く */
-    table.update-confirm-table tr:last-child td {
-      border-bottom: 1.5px solid #e57373;
-    }
-    /* 変更後の値は青文字・太字 */
-    table.update-confirm-table td.col-after strong {
-      color: #1976d2;
-      font-weight: normal;
-    }
-    .form-action-btns {
-      margin-top: 32px !important;
-    }
-    .form-group .form-select {
-      margin-top: 32px;
-      min-width: 260px;
-      font-size: 1.1em;
-      padding: 8px 12px;
-      height: 44px;
-    }
-  </style>
 {% endblock %}

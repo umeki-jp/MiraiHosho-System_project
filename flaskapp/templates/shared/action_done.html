@@ -3,25 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>{{ action_label }}完了</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { text-align: center; padding: 3em; font-size: 1.2em; }
-    .done-message { margin-bottom: 2em; }
-    .close-btn {
-      padding: 0.7em 2em;
-      font-size: 1em;
-      background:#274472;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+    body {
+      background-color: #f0f2f5;
     }
-    .close-btn:hover { background: #145ea8; }
   </style>
 </head>
-<body>
-  <div class="done-message">
-    {{ action_label }}しました
+<body class="d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+
+  <div class="text-center">
+    <div class="alert alert-success p-4" role="alert" style="font-size: 1.2rem;">
+      <h4 class="alert-heading">完了</h4>
+      <p>{{ action_label }}しました</p>
+    </div>
+    <button class="btn btn-primary" onclick="window.close()">閉じる</button>
   </div>
-  <button class="close-btn" onclick="window.close()">閉じる</button>
+
 </body>
 </html>

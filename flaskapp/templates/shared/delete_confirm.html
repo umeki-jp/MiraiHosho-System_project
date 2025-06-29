@@ -3,71 +3,65 @@
 {% set sidebar_enabled = false %}
 
 {% block content %}
-  <div class="confirmation-section text-center" style="padding: 2rem; border: 1px solid #ddd; border-radius: 8px; margin: 2rem auto; max-width: 600px;">
-    
-    <div style="font-size: 3rem; color: #dc3545; margin-bottom: 1rem;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
-        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
-      </svg>
-    </div>
+<div class="container">
+  <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-7 col-lg-5">
+      
+      {# カードコンポーネントで全体を囲む #}
+      <div class="card text-center shadow-sm">
+        <div class="card-body p-4 p-md-5">
 
-    {# 改行を有効にするため、| safe フィルターを追加します #}
-    <p class="lead my-4" style="font-size: 1.2rem;">{{ message | safe }}</p>
+          {# アイコン #}
+          <div class="text-danger mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-exclamation-triangle-fill" viewBox="0 0 16 16">
+              <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+            </svg>
+          </div>
 
-    {% if deletable %}
-      <form method="POST" action="{{ submit_url }}" style="display: block;">
-        
-        {% if is_approval_flow %}
-        {# ★★★ ①② 余白を追加 (my-4) ★★★ #}
-        <div class="form-group my-4 text-start">
-            <label for="approver" class="form-label"><strong>承認者</strong> <span class="required">*</span></label>
-            <select name="approver_id" id="approver" class="form-select" required style="max-width: 300px; width: 100%; padding: 0.5rem 0.75rem; height: auto;">
-                <option value="">選択してください</option>
-                {% for approver in approvers %}
-                    <option value="{{ approver.shain_code }}">{{ approver.shain_name }}</option>
-                {% endfor %}
-            </select>
+          {# メッセージ #}
+          <p class="lead my-4">{{ message | safe }}</p>
+
+          {% if deletable %}
+            <form method="POST" action="{{ submit_url }}">
+              
+              {# 承認フローの場合 #}
+              {% if is_approval_flow %}
+              <div class="row my-4">
+                <label for="approver" class="col-sm-4 col-form-label text-nowrap"><strong>承認者 <span class="text-danger">*</span></strong></label>
+                <div class="col-sm-8">
+                  <select name="approver_id" id="approver" class="form-select" required>
+                      <option value="">選択してください</option>
+                      {% for approver in approvers %}
+                          <option value="{{ approver.shain_code }}">{{ approver.shain_name }}</option>
+                      {% endfor %}
+                  </select>
+                </div>
+              </div>
+              {% endif %}
+
+              {# ボタン #}
+              <div class="d-flex justify-content-center gap-2 mt-4">
+                <button type="submit" name="action" value="{{ final_action_value }}" class="btn btn-danger">
+                  {% if is_approval_flow %}
+                    削除申請
+                  {% else %}
+                    削除
+                  {% endif %}
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="history.back()">戻る</button>
+              </div>
+            </form>
+          {% else %}
+            {# 削除不可の場合 #}
+            <div class="mt-4">
+              <button type="button" class="btn btn-secondary" onclick="history.back()">戻る</button>
+            </div>
+          {% endif %}
+
         </div>
-        {% endif %}
-
-        {# ★★★ ③ ボタンのコンテナを中央揃えにし、余白を追加 (justify-content-center, mt-4) ★★★ #}
-        <div class="form-action-btns mt-4 justify-content-center">
-          <button type="submit" name="action" value="{{ final_action_value }}" class="form-action-btn">
-            {% if is_approval_flow %}
-              削除申請
-            {% else %}
-              削除
-            {% endif %}
-          </button>
-          <button type="button" class="form-action-btn btn-negative" onclick="history.back()">戻る</button>
-        </div>
-      </form>
-    {% else %}
-      {# 削除不可の場合も、CSSが適用されたボタンにします #}
-      <div class="form-action-btns mt-4 justify-content-center">
-        <button type="button" class="form-action-btn" onclick="history.back()">戻る</button>
       </div>
-    {% endif %}
+
+    </div>
   </div>
-{% endblock %}
-
-{% block head %}
-  {{ super() }}
-  <style>
-
-    .form-action-btns {
-      margin-top: 32px !important;
-      display: flex;
-      justify-content: center;
-      gap: 16px; /* ボタン間の余白 */
-    }
-
-    .form-group .form-select {
-      margin-top: 32px;
-      min-width: 260px;
-      font-size: 1.1em;
-      padding: 8px 12px;
-      height: 44px;
-    }
-  </style>
+</div>
 {% endblock %}

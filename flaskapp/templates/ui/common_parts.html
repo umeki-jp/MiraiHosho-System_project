@@ -1,10 +1,10 @@
 {# ui/common_parts.html #}
 
-{# 🔹 通常の検索用テキストボックス #}
+{# 🔹 通常の検索用テキストボックス (Bootstrap化) #}
 {% macro search_input(label, name, value, placeholder="") %}
-  <div class="search-group">
-    <label class="search-label">{{ label }}</label>
-    <input name="{{ name }}" type="text" class="search-input" value="{{ value }}" placeholder="{{ placeholder }}" />
+  <div class="input-group input-group-sm">
+    <label class="input-group-text" for="{{ name }}">{{ label }}</label>
+    <input type="text" name="{{ name }}" id="{{ name }}" class="form-control" value="{{ value }}" placeholder="{{ placeholder }}">
   </div>
 {% endmacro %}
 
@@ -23,11 +23,10 @@
 {% endmacro %}
 
 {# 🔹 日付入力用マクロ（from～to） #}
-{% macro date_range(label, name_from, name_to, value_from, value_to) %}
-  <div class="search-item">
-    <label class="search-label">{{ label }}</label>
-    <input type="date" name="{{ name_from }}" value="{{ value_from or '' }}" class="search-input">
-    <span>～</span>
-    <input type="date" name="{{ name_to }}" value="{{ value_to or '' }}" class="search-input">
+{% macro search_input(label, name, value, placeholder="") %}
+  {# input-groupにw-100クラスを追加して、親要素の幅いっぱいに広がるようにする #}
+  <div class="input-group input-group-sm w-100">
+    <label class="input-group-text" for="{{ name }}">{{ label }}</label>
+    <input type="text" name="{{ name }}" id="{{ name }}" class="form-control" value="{{ value }}" placeholder="{{ placeholder }}">
   </div>
 {% endmacro %}
