@@ -14,6 +14,6 @@ def create_app():
     app.register_blueprint(applications_bp)
     app.register_blueprint(root_bp)
     app.register_blueprint(customerlist_bp)
-
+    app.register_blueprint(api_bp)
 
     return app
