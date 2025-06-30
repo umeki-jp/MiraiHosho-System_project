@@ -79,7 +79,8 @@
       color: white;
       padding: 20px;
       transition: transform 0.3s ease;
-      height: 100vh;         /* ← これを追加 */
+      /* height: 100vh; */     /* ← この行をコメントアウトまたは削除 */
+  height: 100%;          /* ← または、親要素の高さに合わせるためこれに書き換える */
       box-sizing: border-box;
       overflow-y: auto;      /* サブメニューが多い場合もスクロール可能に */
       display: flex;
