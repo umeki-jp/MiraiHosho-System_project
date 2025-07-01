@@ -246,6 +246,14 @@ def customer_new():
                     datetime_fields = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
                     integer_fields = ["individual_age"]
                     form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                    # 郵便番号を「NNN-NNNN」形式に強制フォーマット
+                    for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
+                        code = form_data.get(field)
+                        if code:
+                            digits = code.replace('-', '')
+                            if len(digits) == 7 and digits.isdigit():
+                                form_data[field] = f"{digits[:3]}-{digits[3:]}"
+                    
                     form_data['registration_date'] = datetime.datetime.now() # 登録日を現在時刻に設定
                     form_data['update_date'] = None # 更新日はNULLに設定
                     
@@ -369,6 +377,14 @@ def customer_edit(customer_code):
 
             elif action == "submit_update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                 # 郵便番号を「NNN-NNNN」形式に強制フォーマット
+                for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
+                    code = form_data.get(field)
+                    if code:
+                        digits = code.replace('-', '')
+                        if len(digits) == 7 and digits.isdigit():
+                            form_data[field] = f"{digits[:3]}-{digits[3:]}"
+                
                 with conn.cursor() as cursor:
                     datetime_fields = ["individual_birthDate", "corporate_foundationdate"] # 登録/更新日時はサーバーで設定するため除外
                     integer_fields = ["individual_age"]

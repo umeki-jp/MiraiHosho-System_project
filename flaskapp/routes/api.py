@@ -21,20 +21,26 @@ DB_CONFIG = {
 # URLは /search_address_by_postal となります (url_prefixと結合される)
 @api_bp.route('/search_address_by_postal')
 def search_address_by_postal():
-    """郵便番号から住所を検索するAPI"""
-    postal_code = request.args.get('postal_code', '')
+    """郵便番号から住所を検索するAPI（ハイフンあり・なし両対応）"""
+    postal_code_from_form = request.args.get('postal_code', '')
 
-    if not postal_code or not postal_code.isdigit():
-        return jsonify({'error': '無効な郵便番号です'}), 400
+    postal_code_for_db = postal_code_from_form.replace('-', '')
+
+    if not postal_code_for_db.isdigit() or len(postal_code_for_db) != 7:
+        return jsonify({'error': '無効な郵便番号形式です'}), 400
 
     conn = None
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor(dictionary=True)
         query = "SELECT * FROM postal_codes WHERE postal_code = %s"
-        cursor.execute(query, (postal_code,))
+
+        # ▼▼▼ ここの変数名を修正 ▼▼▼
+        cursor.execute(query, (postal_code_for_db,))
+        
         results = cursor.fetchall()
         return jsonify(results)
+        
     except mysql.connector.Error as err:
         return jsonify({'error': f'データベースエラー: {err}'}), 500
     finally:

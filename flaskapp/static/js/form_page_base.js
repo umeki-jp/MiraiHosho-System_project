@@ -323,3 +323,123 @@ postalFields.forEach(field => {
         updateFoundationDateDisplay();
     }
 });
+
+/* ▼▼▼ form_page_base.jsの住所検索関連のコードは、最終的に以下のようになります ▼▼▼ */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // --- 住所検索機能の初期化 ---
+    const addressModalElement = document.getElementById('address-modal');
+    if (!addressModalElement) return;
+
+    const addressModal = new bootstrap.Modal(addressModalElement);
+    const resultsList = document.getElementById('address-results-list');
+    
+    // ページ内にある、すべての住所検索グループを対象に処理を適用
+    document.querySelectorAll('.address-lookup-group').forEach(group => {
+        // --- 郵便番号からの検索 ---
+        const searchBtn = group.querySelector('.address-search-btn');
+        const postalCodeInput = group.querySelector('.postal-code-input');
+
+        if (searchBtn && postalCodeInput) {
+            searchBtn.addEventListener('click', async () => {
+                const postalCode = postalCodeInput.value;
+                if (!postalCode) {
+                    alert('郵便番号を入力してください。');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/api/search_address_by_postal?postal_code=${encodeURIComponent(postalCode)}`);
+                    if (!response.ok) throw new Error('サーバーとの通信に失敗しました。');
+                    const results = await response.json();
+                    showAddressModal(results, group);
+                } catch (error) {
+                    console.error("住所検索エラー:", error);
+                    alert('住所の検索中にエラーが発生しました。');
+                }
+            });
+        }
+
+        // --- 住所からの逆引き検索 ---
+        const reverseSearchBtn = group.querySelector('.reverse-address-search-btn');
+        const prefectureInput = group.querySelector('.prefecture-output');
+        const cityInput = group.querySelector('.city-output');
+        const townInput = group.querySelector('.town-output');
+
+        if (reverseSearchBtn) {
+            reverseSearchBtn.addEventListener('click', async () => {
+                const prefecture = prefectureInput ? prefectureInput.value : '';
+                const city = cityInput ? cityInput.value : '';
+                const town = townInput ? townInput.value : '';
+
+                if (!prefecture && !city && !town) {
+                    alert('都道府県、市区町村、町名のいずれかを入力してください。');
+                    return;
+                }
+                const params = new URLSearchParams();
+                if (prefecture) params.append('prefecture', prefecture);
+                if (city) params.append('city', city);
+                if (town) params.append('town', town);
+                try {
+                    const response = await fetch(`/api/search_postal_by_address?${params.toString()}`);
+                    if (!response.ok) throw new Error('サーバーとの通信に失敗しました。');
+                    const results = await response.json();
+                    showAddressModal(results, group);
+                } catch (error) {
+                    console.error("逆引き検索エラー:", error);
+                    alert('郵便番号の検索中にエラーが発生しました。');
+                }
+            });
+        }
+    });
+
+    // 住所候補をモーダルに表示する関数
+    function showAddressModal(results, targetGroup) {
+        resultsList.innerHTML = ''; // 前回の結果をクリア
+
+        if (results.length === 0) {
+            resultsList.innerHTML = '<li class="list-group-item">該当する住所が見つかりませんでした。</li>';
+        } else {
+            results.forEach(addr => {
+                const a = document.createElement('a');
+                a.href = '#';
+                a.className = 'list-group-item list-group-item-action';
+                a.textContent = `〒${addr.postal_code} ${addr.prefecture} ${addr.city} ${addr.town}`;
+                
+                // data属性に全データを埋め込む
+                a.dataset.postalCode = addr.postal_code; // 郵便番号もdata属性に追加
+                a.dataset.prefecture = addr.prefecture;
+                a.dataset.city = addr.city;
+                a.dataset.town = addr.town;
+                a.dataset.cityKana = addr.city_kana;
+                a.dataset.townKana = addr.town_kana;
+
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    populateAddressFields(e.target.dataset, targetGroup);
+                    addressModal.hide();
+                });
+
+                resultsList.appendChild(a);
+            });
+        }
+        addressModal.show();
+    }
+
+    // フォームの各欄に住所情報を反映させる関数
+    function populateAddressFields(data, targetGroup) {
+        const postalCodeInput = targetGroup.querySelector('.postal-code-input');
+        const prefectureInput = targetGroup.querySelector('.prefecture-output');
+        const cityInput = targetGroup.querySelector('.city-output');
+        const townInput = targetGroup.querySelector('.town-output');
+        const cityKanaSpan = targetGroup.querySelector('.city-kana-output');
+        const townKanaSpan = targetGroup.querySelector('.town-kana-output');
+
+        if (postalCodeInput) postalCodeInput.value = data.postalCode || ''; // 郵便番号も反映
+        if (prefectureInput) prefectureInput.value = data.prefecture || '';
+        if (cityInput) cityInput.value = data.city || '';
+        if (townInput) townInput.value = data.town || '';
+        if (cityKanaSpan) cityKanaSpan.textContent = data.cityKana || '';
+        if (townKanaSpan) townKanaSpan.textContent = data.townKana || '';
+    }
+});

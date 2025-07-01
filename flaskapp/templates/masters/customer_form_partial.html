@@ -81,27 +81,35 @@
   </div>
 
   <div class="row">
-    <label class="col-sm-2 col-form-label">現住所</label>
-    <div class="col-sm-10">
-      <!-- 郵便番号 -->
+  <label class="col-sm-2 col-form-label">現住所</label>
+  <div class="col-sm-10">
+    <div class="address-lookup-group">
       <div class="d-flex align-items-center gap-2 mb-2">
-        <input type="text" name="individual_postalcode" id="individual_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.individual_postalcode or '' }}" maxlength="8">
-        <button class="btn btn-outline-secondary" type="button" id="search-address-btn">住所検索</button>
-      </div>
-      <!-- 都道府県・市区町村 -->
-      <div class="d-flex gap-2 mb-2"> 
-        <input type="text" name="individual_prefecture" id="individual_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_prefecture or '' }}" maxlength="5">       
-        <input type="text" name="individual_city" id="individual_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_city or '' }}" maxlength="20">
-      </div>
-      <!-- 番地・建物名 -->
-      <div class="mb-2">
-        <input type="text" name="individual_address" id="individual_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_address or '' }}" maxlength="50">
+        {# ▼▼▼ classに postal-code-input を追加 ▼▼▼ #}
+        <input type="text" name="individual_postalcode" id="individual_postalcode" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.individual_postalcode or '' }}" maxlength="8">
+        {# ▼▼▼ classに address-search-btn を追加 ▼▼▼ #}
+        <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button" id="search-address-btn">住所検索</button>
+        <div class="kana-display-area small text-muted ms-2">
+            <span class="city-kana-output"></span> <span class="town-kana-output"></span>
+        </div>
       </div>
 
-      <!-- 住居区分 -->
+      <div class="d-flex gap-2 mb-2"> 
+        {# ▼▼▼ classに prefecture-output と city-output を追加 ▼▼▼ #}
+        <input type="text" name="individual_prefecture" id="individual_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_prefecture or '' }}" maxlength="5">       
+        <input type="text" name="individual_city" id="individual_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_city or '' }}" maxlength="20">
+        <button class="btn btn-outline-secondary btn-sm reverse-address-search-btn" type="button">逆引き検索</button>
+      </div>
+
+      <div class="mb-2">
+        {# ▼▼▼ classに town-output を追加 ▼▼▼ #}
+        <input type="text" name="individual_address" id="individual_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_address or '' }}" maxlength="50">
+      </div>
+
       <div>
-        <select name="individual_currentaddresscategory" id="individual_currentaddresscategory" class="form-select form-select-sm" style="max-width: 10em;">
-          <option value="">～住所区分～</option>
+        {# ▼▼▼ classに currentaddresscategory-output を追加（任意） ▼▼▼ #}
+        <select name="individual_currentaddresscategory" id="individual_currentaddresscategory" class="form-select" style="max-width: 15em;">
+          <option value="">～住居区分～</option>
           <option value="自己所有" {% if form_data.individual_currentaddresscategory == '自己所有' %}selected{% endif %}>自己所有</option>
           <option value="家族所有" {% if form_data.individual_currentaddresscategory == '家族所有' %}selected{% endif %}>家族所有</option>
           <option value="賃貸" {% if form_data.individual_currentaddresscategory == '賃貸' %}selected{% endif %}>賃貸</option>
@@ -111,6 +119,7 @@
       </div>
     </div>
   </div>
+</div>
 
   <div class="row">
     <label for="individual_tel" class="col-sm-2 col-form-label">電話番号</label>
@@ -158,16 +167,22 @@
   <div class="row">
     <label class="col-sm-2 col-form-label">勤務先住所</label>
     <div class="col-sm-10">
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <input type="text" name="individual_workplace_postalcode" id="individual_workplace_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;"value="{{ form_data.individual_workplace_postalcode or '' }}" maxlength="8">
-        <button class="btn btn-outline-secondary" type="button" id="search-workplace-address-btn">住所検索</button>
-      </div>
-      <div class="d-flex gap-2 mb-2">       
-          <input type="text" name="individual_workplace_prefecture" id="individual_workplace_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_workplace_prefecture or '' }}" maxlength="5">
-          <input type="text" name="individual_workplace_city" id="individual_workplace_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_workplace_city or '' }}" maxlength="20">        
-      </div>
-      <div class="mb-2">
-        <input type="text" name="individual_workplace_address" id="individual_workplace_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_workplace_address or '' }}" maxlength="50">
+      <div class="address-lookup-group">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <input type="text" name="individual_workplace_postalcode" id="individual_workplace_postalcode" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.individual_workplace_postalcode or '' }}" maxlength="8">
+          <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button">住所検索</button>
+          <div class="kana-display-area small text-muted ms-2">
+            <span class="city-kana-output"></span> <span class="town-kana-output"></span>
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <input type="text" name="individual_workplace_prefecture" id="individual_workplace_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.individual_workplace_prefecture or '' }}" maxlength="5">
+          <input type="text" name="individual_workplace_city" id="individual_workplace_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.individual_workplace_city or '' }}" maxlength="20">
+          <button class="btn btn-outline-secondary btn-sm reverse-address-search-btn" type="button">逆引き検索</button>
+        </div>
+        <div class="mb-2">
+          <input type="text" name="individual_workplace_address" id="individual_workplace_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.individual_workplace_address or '' }}" maxlength="50">
+        </div>
       </div>
     </div>
   </div>
@@ -258,21 +273,27 @@
   </div>
 
   <div class="row">
-    <label class="col-sm-2 col-form-label">法人住所</label>
-    <div class="col-sm-10">
+  <label class="col-sm-2 col-form-label">法人住所</label>
+  <div class="col-sm-10">
+    <div class="address-lookup-group">
       <div class="d-flex align-items-center gap-2 mb-2">
-        <input type="text" name="corporate_postalcode" id="corporate_postalcode" class="form-control" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.corporate_postalcode or '' }}" maxlength="8">
-        <button class="btn btn-outline-secondary" type="button" id="search-corporate-address-btn">住所検索</button>
+        <input type="text" name="corporate_postalcode" id="corporate_postalcode" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.corporate_postalcode or '' }}" maxlength="8">
+        <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button">住所検索</button>
+        <div class="kana-display-area small text-muted ms-2">
+          <span class="city-kana-output"></span> <span class="town-kana-output"></span>
+        </div>
       </div>
-      <div class="d-flex gap-2 mb-2">
-          <input type="text" name="corporate_prefecture" id="corporate_prefecture" class="form-control" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.corporate_prefecture or '' }}" maxlength="5">
-          <input type="text" name="corporate_city" id="corporate_city" class="form-control" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.corporate_city or '' }}" maxlength="20">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <input type="text" name="corporate_prefecture" id="corporate_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.corporate_prefecture or '' }}" maxlength="5">
+        <input type="text" name="corporate_city" id="corporate_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.corporate_city or '' }}" maxlength="20">
+        <button class="btn btn-outline-secondary btn-sm reverse-address-search-btn" type="button">逆引き検索</button>
       </div>
       <div class="mb-2">
-        <input type="text" name="corporate_address" id="corporate_address" class="form-control" placeholder="番地・建物名(全角入力)" value="{{ form_data.corporate_address or '' }}" maxlength="50">
+        <input type="text" name="corporate_address" id="corporate_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.corporate_address or '' }}" maxlength="50">
       </div>
     </div>
   </div>
+</div>
 
   <div class="row">
     <label for="corporate_tel" class="col-sm-2 col-form-label">法人電話番号</label>
