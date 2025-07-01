@@ -3,6 +3,15 @@
 
 {% block content %}
 
+  {% if error_message %}
+    {# エラーメッセージが渡された場合、エラー表示だけを行う #}
+    <div class="alert alert-danger" role="alert">
+      <strong>エラー:</strong> {{ error_message }}
+    </div>
+
+  {# ▼▼▼【手順2】ここを追加 ▼▼▼ #}
+  {% else %}
+
   <!-- 上部：新規登録ボタン -->
   <div class="mb-4 d-flex justify-content-start">
     <a href="{{ url_for('customerlist.customer_new') }}"
@@ -114,5 +123,5 @@
       </tbody>
     </table>
   </div>
-
+  {% endif %}
 {% endblock %}

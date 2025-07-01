@@ -57,6 +57,8 @@ def get_field_labels():
 # ==============================================================================
 # customerlist.py の中の関数をこれに置き換え
 
+# customerlist.py に貼り付ける完成版コード
+
 @customerlist_bp.route("/masters/customerlist")
 def show_customerlist():
     # 検索フィルターの値を取得
@@ -73,29 +75,23 @@ def show_customerlist():
     has_search = any(filters.values())
     
     # ページネーションの設定
-    page_str = request.args.get("page", "1")
-    page = int(page_str) if page_str.isdigit() else 1
-    
-    limit_str = request.args.get("limit", "20")
-    limit = int(limit_str) if limit_str.isdigit() else 20
-
+    page = int(request.args.get("page", "1"))
+    limit = int(request.args.get("limit", "20"))
     offset = (page - 1) * limit
 
-    # データベース接続
-    conn = get_db_connection()
-
-    # ★★★ 接続失敗時のチェック ★★★
-    if not conn:
-        flash("データベースに接続できませんでした。管理者にお問い合わせください。", "danger")
-        return render_template(
-            "masters/customerlist.html", customers=[], total=0, page=1, limit=limit, 
-            total_pages=0, filters=filters, has_search=has_search, 
-            selected_limit=str(limit), registration_status=constants.registration_status_MAP
-        )
-
-    results = []
+    # テンプレートに渡す変数を初期化
+    customers = []
     total = 0
+    error_message = None
+    conn = None # finallyブロックで使えるよう、tryの外で定義
+
     try:
+        # データベース接続とデータ取得
+        conn = get_db_connection()
+        if not conn:
+            # 接続関数がNoneを返した場合（例: 設定ミスなど）
+            raise Exception("データベース接続に失敗しました。")
+
         # 検索条件の組み立て
         where_clauses = ["1=1"]
         params = {}
@@ -127,7 +123,6 @@ def show_customerlist():
 
         where_sql = " AND ".join(where_clauses)
 
-        # データベース操作
         with conn.cursor() as cursor:
             # 総件数を取得
             count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql}"
@@ -135,28 +130,34 @@ def show_customerlist():
             total = cursor.fetchone()['total'] or 0
             
             # 表示するデータを取得
-            params_with_limit = params.copy()
-            params_with_limit['limit'] = limit
-            params_with_limit['offset'] = offset
-            
-            sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} ORDER BY customer_code DESC LIMIT %(limit)s OFFSET %(offset)s"
-            cursor.execute(sql, params_with_limit)
-            results = cursor.fetchall()
+            if total > 0:
+                params_with_limit = params.copy()
+                params_with_limit['limit'] = limit
+                params_with_limit['offset'] = offset
+                
+                sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} ORDER BY customer_code DESC LIMIT %(limit)s OFFSET %(offset)s"
+                cursor.execute(sql, params_with_limit)
+                customers = cursor.fetchall()
 
     except Exception as e:
-        flash(f"データの取得中にエラーが発生しました: {e}", "danger")
+        # 接続やクエリ実行でエラーが発生した場合
+        print(f"データベースエラーが発生しました: {e}") # 開発者向けのログ出力
+        error_message = "データベースの読み込み中にエラーが発生しました。管理者にお問い合わせください。"
+        # ページネーションや検索結果がエラーにならないよう、数値を0にリセット
         total = 0
-        results = []
+        customers = []
+
     finally:
+        # 接続が確立されていた場合のみクローズする
         if conn:
             conn.close()
             
-    # テンプレートに渡す値を計算
+    # ページ総数を計算
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
     return render_template(
         "masters/customerlist.html",
-        customers=results, 
+        customers=customers, 
         total=total, 
         page=page, 
         limit=limit, 
@@ -164,7 +165,8 @@ def show_customerlist():
         filters=filters, 
         has_search=has_search, 
         selected_limit=str(limit),
-        registration_status=constants.registration_status_MAP
+        registration_status=constants.registration_status_MAP,
+        error_message=error_message  # エラーメッセージをテンプレートに渡す
     )
 
 # ==============================================================================
@@ -172,68 +174,46 @@ def show_customerlist():
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/new", methods=["GET", "POST"])
 def customer_new():
-    conn = get_db_connection()
+    conn = None # finallyブロックで使えるよう、tryの外で定義
     try:
+        conn = get_db_connection()
+        if not conn:
+            raise Exception("データベース接続に失敗しました。")
+
         button_config = {"show_instant_register": True, "show_approval_register": True}
 
         if request.method == "POST":
+            # --- POST時の処理（内容は変更なし） ---
             action = request.form.get("action")
             form_data = {f: request.form.get(f, "").strip() for f in field_names}
             
-            # ▼▼▼ 修正 ▼▼▼ (ここから日付妥当性チェックを追加)
             birth_date_str = form_data.get("individual_birthDate")
-            if birth_date_str: # 日付が入力されている場合のみチェック
+            if birth_date_str:
                 try:
-                    # YYYYMMDD形式の文字列を日付に変換しようと試みる
                     datetime.datetime.strptime(birth_date_str, '%Y%m%d')
                 except ValueError:
-                    # 変換に失敗した場合（=ありえない日付の場合）
                     flash("個人_生年月日に入力された日付が正しくありません。(例: 19800230)", "error")
-                    # エラーメッセージをセットし、元のフォーム画面に戻す
-                    return render_template(
-                        "masters/customer_form.html", 
-                        form_data=form_data, 
-                        mode="create", 
-                        page_title="新規 顧客登録", 
-                        button_config=button_config,
-                        registration_status=constants.registration_status_MAP
-                        
-                    )
+                    return render_template("masters/customer_form.html", form_data=form_data, mode="create", page_title="新規 顧客登録", button_config=button_config, registration_status=constants.registration_status_MAP)
 
             if not form_data.get("name"):
                 flash("名前を入力してください。", "error")
-                return render_template(
-                    "masters/customer_form.html", 
-                    form_data=form_data, 
-                    mode="create", 
-                    page_title="新規 顧客登録", 
-                    button_config=button_config,
-                    registration_status=constants.registration_status_MAP
-                    
-                )
+                return render_template("masters/customer_form.html", form_data=form_data, mode="create", page_title="新規 顧客登録", button_config=button_config, registration_status=constants.registration_status_MAP)
 
             if action == "request_new_approval":
                 approvers = get_approvers(conn)
                 field_labels = get_field_labels()
                 changes = [{"label": field_labels.get(k, k), "before": "", "after": v} for k, v in form_data.items() if v]
-                return render_template(
-                    "shared/update_confirm.html", 
-                    changes=changes, form_data=form_data, submit_url=url_for('customerlist.customer_new'),
-                    is_approval_flow=True, approvers=approvers, final_action_value="submit_new_approval"
-                )
+                return render_template("shared/update_confirm.html", changes=changes, form_data=form_data, submit_url=url_for('customerlist.customer_new'), is_approval_flow=True, approvers=approvers, final_action_value="submit_new_approval")
             
             elif action == "submit_new_approval":
                 approver_id = request.form.get('approver_id')
                 with conn.cursor() as cursor:
-                    requester_id = 'admin' # 仮
-                    sql = """
-                        INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, '申請中')
-                    """
+                    requester_id = 'admin'
+                    sql = "INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status) VALUES (%s, %s, %s, %s, %s, %s, '申請中')"
                     request_data_json = json.dumps(form_data, ensure_ascii=False)
                     cursor.execute(sql, ('ms01_customerlist', 'NEW', '新規', request_data_json, requester_id, approver_id))
                     conn.commit()
-                flash(f"新規顧客の登録を申請しました。", "success")
+                flash("新規顧客の登録を申請しました。", "success")
                 return redirect(url_for("customerlist.show_customerlist"))
 
             elif action == "register_instant":
@@ -246,7 +226,6 @@ def customer_new():
                     datetime_fields = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
                     integer_fields = ["individual_age"]
                     form_data = {f: request.form.get(f, "").strip() for f in field_names}
-                    # 郵便番号を「NNN-NNNN」形式に強制フォーマット
                     for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
                         code = form_data.get(field)
                         if code:
@@ -254,8 +233,8 @@ def customer_new():
                             if len(digits) == 7 and digits.isdigit():
                                 form_data[field] = f"{digits[:3]}-{digits[3:]}"
                     
-                    form_data['registration_date'] = datetime.datetime.now() # 登録日を現在時刻に設定
-                    form_data['update_date'] = None # 更新日はNULLに設定
+                    form_data['registration_date'] = datetime.datetime.now()
+                    form_data['update_date'] = None
                     
                     values = [customer_code]
                     for f in field_names:
@@ -264,37 +243,30 @@ def customer_new():
                             values.append(None)
                         else:
                             values.append(val)
-                            
-                    # ステータスとして「1: 登録済」を追加
-                    values.append(1) 
-
-                    # SQLの組み立てと実行
+                    values.append(1)
                     column_names = ", ".join(["customer_code"] + field_names + ["registration_status"])
                     placeholders = ", ".join(["%s"] * len(values))
                     sql = f"INSERT INTO ms01_customerlist ({column_names}) VALUES ({placeholders})"
-                    
                     cursor.execute(sql, values)
                     conn.commit()
                 flash(f"顧客コード {customer_code} が発行されました。", "success")
                 return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
 
-        # GETリクエスト（画面の初期表示）の場合
+        # --- GET時の処理 ---
         form_data = {f: "" for f in field_names}
-        
-        # ステータスに「未登録」を意味する `0` を設定
         form_data['registration_status'] = 0 
         
-        return render_template(
-            "masters/customer_form.html", 
-            form_data=form_data, 
-            mode="create", 
-            page_title="新規 顧客登録", 
-            button_config=button_config,
-            registration_status=constants.registration_status_MAP # テンプレートで使えるようにstatus_mapを渡す
-        )
-        
+        return render_template("masters/customer_form.html", form_data=form_data, mode="create", page_title="新規 顧客登録", button_config=button_config, registration_status=constants.registration_status_MAP)
+
+    except Exception as e:
+        # DB接続や処理中に何らかのエラーが発生した場合
+        print(f"エラーが発生しました (customer_new): {e}")
+        flash("エラーが発生したため、操作を完了できませんでした。管理者にお問い合わせください。", "danger")
+        # エラー発生時は顧客一覧へリダイレクトする
+        return redirect(url_for('customerlist.show_customerlist'))
+
     finally:
-        if conn.open:
+        if conn and conn.open:
             conn.close()
 
 # ==============================================================================
@@ -302,25 +274,27 @@ def customer_new():
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/<customer_code>", methods=["GET", "POST"])
 def customer_edit(customer_code):
-    conn = get_db_connection()
+    conn = None # finallyブロックで使えるよう、tryの外で定義
     try:
+        conn = get_db_connection()
+        if not conn:
+            raise Exception("データベース接続に失敗しました。")
+
         if request.method == "POST":
+            # --- POST時の処理（内容は変更なし） ---
             action = request.form.get("action")
             
             if action in ["update_instant", "request_update_approval"]:
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 
-                # ▼▼▼ 修正 ▼▼▼ (ここから日付妥当性チェックを追加)
                 birth_date_str = form_data.get("individual_birthDate")
-                if birth_date_str: # 日付が入力されている場合のみチェック
+                if birth_date_str:
                     try:
                         datetime.datetime.strptime(birth_date_str, '%Y%m%d')
                     except ValueError:
                         flash("個人_生年月日に入力された日付が正しくありません。(例: 19800230)", "error")
-                        # 編集モードで元のフォーム画面に戻す
                         button_config = {"show_instant_update": True, "show_approval_update": True, "show_instant_delete": True, "show_approval_delete": True}
                         return render_template("masters/customer_form.html", form_data=form_data, mode="edit", button_config=button_config)
-                # ▲▲▲ 修正 ▲▲▲ (チェックここまで)
                 
                 with conn.cursor() as cursor:
                     cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
@@ -330,42 +304,29 @@ def customer_edit(customer_code):
                     flash("更新対象の顧客データが見つかりません。", "error")
                     return redirect(url_for('customerlist.show_customerlist'))
 
-                # ▼▼▼ 修正 ▼▼▼ (スクリーンショットの問題を解決するための新しい比較ロジック)
                 changes = []
                 field_labels = get_field_labels()
-
-                # フィールドの種別を定義
                 datetime_local_fields = ["registration_date", "update_date"]
                 yyyymmdd_fields = ["individual_birthDate", "corporate_foundationdate"]
 
                 for field in field_names:
                     before_val = before_data.get(field)
-                    after_val = form_data.get(field, '') # キーが存在しない場合も考慮し、デフォルト値を空文字に
-
-                    # 比較のために、両方の値を文字列に正規化する
+                    after_val = form_data.get(field, '')
                     before_str = ""
                     after_str = str(after_val)
 
-                    # before_val (DBからの値) をフィールドの種別に応じて文字列に変換
                     if field in datetime_local_fields:
                         if isinstance(before_val, datetime.datetime):
-                            # 「YYYY-MM-DDTHH:MM」形式に変換
                             before_str = before_val.strftime('%Y-%m-%dT%H:%M')
                     elif field in yyyymmdd_fields:
                         if isinstance(before_val, datetime.date):
-                            # 「YYYYMMDD」形式に変換
                             before_str = before_val.strftime('%Y%m%d')
                     elif before_val is not None:
-                        # その他のフィールドは単純に文字列に変換
                         before_str = str(before_val)
 
-                    # 変更があったか比較
                     if before_str != after_str:
-                        changes.append({
-                            "label": field_labels.get(field, field),
-                            "before": before_str,
-                            "after": after_str
-                        })                
+                        changes.append({"label": field_labels.get(field, field), "before": before_str, "after": after_str})
+                
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
@@ -377,7 +338,6 @@ def customer_edit(customer_code):
 
             elif action == "submit_update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
-                 # 郵便番号を「NNN-NNNN」形式に強制フォーマット
                 for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
                     code = form_data.get(field)
                     if code:
@@ -386,19 +346,14 @@ def customer_edit(customer_code):
                             form_data[field] = f"{digits[:3]}-{digits[3:]}"
                 
                 with conn.cursor() as cursor:
-                    datetime_fields = ["individual_birthDate", "corporate_foundationdate"] # 登録/更新日時はサーバーで設定するため除外
+                    datetime_fields = ["individual_birthDate", "corporate_foundationdate"]
                     integer_fields = ["individual_age"]
-                    
-                    # 更新するカラムと値を動的に作成
                     update_parts = []
                     values = []
                     
-                    # フォームから送信された値をセット
                     for f in field_names:
-                        # 登録/更新日時はフォームの値を使わない
                         if f in ["registration_date", "registration_shain", "update_date", "update_shain"]:
                             continue
-                        
                         val = form_data.get(f, "")
                         if (f in datetime_fields or f in integer_fields) and val == "":
                             values.append(None)
@@ -406,31 +361,23 @@ def customer_edit(customer_code):
                             values.append(val)
                         update_parts.append(f"{f} = %s")
 
-                    # 更新日時と更新者をサーバー側で設定
                     update_parts.append("update_date = %s")
                     values.append(datetime.datetime.now())
-                    
                     update_parts.append("update_shain = %s")
-                    values.append("admin") # 仮の更新者ID。将来的にはログインユーザーIDをセット
-
-                    # WHERE句のための顧客コードを最後に追加
+                    values.append("admin")
                     values.append(customer_code)
-
                     sql = f"UPDATE ms01_customerlist SET {', '.join(update_parts)} WHERE customer_code = %s"
                     cursor.execute(sql, values)
                     conn.commit()
                 return render_template("shared/action_done.html", action_label="更新")
-            # ▲▲▲【ここまで修正】▲▲▲
 
             elif action == "submit_update_approval":
+                # ... (この部分のロジックは変更なし) ...
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 approver_id = request.form.get('approver_id')
                 with conn.cursor() as cursor:
                     requester_id = 'admin' # 仮
-                    sql_request = """
-                        INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, '申請中')
-                    """
+                    sql_request = "INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status) VALUES (%s, %s, %s, %s, %s, %s, '申請中')"
                     request_data_json = json.dumps(form_data, ensure_ascii=False)
                     cursor.execute(sql_request, ('ms01_customerlist', customer_code, '更新', request_data_json, requester_id, approver_id))
                     cursor.execute("UPDATE ms01_customerlist SET registration_status = %s WHERE customer_code = %s", (2, customer_code))
@@ -439,6 +386,7 @@ def customer_edit(customer_code):
                 return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
 
             elif action in ["delete_instant", "request_delete_approval"]:
+                # ... (この部分のロジックは変更なし) ...
                 with conn.cursor() as cursor:
                     cursor.execute("SELECT application_number FROM tr01_applicationlist WHERE customer_code = %s", (customer_code,))
                     related_applications = cursor.fetchall()
@@ -455,15 +403,20 @@ def customer_edit(customer_code):
                 final_action_value = "submit_delete_approval" if is_approval_flow else "submit_delete_instant"
                 return render_template("shared/delete_confirm.html", message=message, deletable=deletable, submit_url=url_for('customerlist.customer_delete_confirmed', customer_code=customer_code), approvers=approvers, is_approval_flow=is_approval_flow, final_action_value=final_action_value)
 
+
+        # --- GET時の処理 ---
         button_config = {"show_instant_update": True, "show_approval_update": True, "show_instant_delete": True, "show_approval_delete": True}
         with conn.cursor() as cursor:
+            # 顧客データを取得
             cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
             customer = cursor.fetchone()
+        
+        # データが取得できなかった場合は一覧へ戻す
         if not customer:
             flash("指定された顧客が見つかりませんでした。", "error")
             return redirect(url_for("customerlist.show_customerlist"))
         
-        # ▼▼▼【ここに追加】ステータスを数値型に変換 ▼▼▼
+        # 以下、データ表示のための整形処理（変更なし）
         if customer.get('registration_status') is not None:
             customer['registration_status'] = int(customer['registration_status'])
 
@@ -475,23 +428,23 @@ def customer_edit(customer_code):
 
         for field in ["registration_date", "update_date"]:
             if customer.get(field) and isinstance(customer.get(field), (datetime.date, datetime.datetime)):
-                # datetime-local の形式 'YYYY-MM-DDTHH:MM' に合わせる
                 customer[field] = customer[field].strftime('%Y-%m-%dT%H:%M')
 
         for key, value in customer.items():
             if value is None:
                 customer[key] = ''
-        # テンプレートに status_map を渡す
-        return render_template(
-            "masters/customer_form.html", 
-            form_data=customer, 
-            mode="edit", 
-            button_config=button_config,
-            registration_status=constants.registration_status_MAP # この行を修正
-        )    
+        
+        return render_template("masters/customer_form.html", form_data=customer, mode="edit", button_config=button_config, registration_status=constants.registration_status_MAP)    
+
+    except Exception as e:
+        # DB接続や処理中に何らかのエラーが発生した場合
+        print(f"エラーが発生しました (customer_edit): {e}")
+        flash("顧客データの読み込みに失敗しました。管理者にお問い合わせください。", "danger")
+        # エラー発生時は顧客一覧へリダイレクトする
+        return redirect(url_for('customerlist.show_customerlist'))
 
     finally:
-        if conn.open:
+        if conn and conn.open:
             conn.close()
 
 # ==============================================================================
@@ -499,8 +452,12 @@ def customer_edit(customer_code):
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/delete/<customer_code>", methods=["POST"])
 def customer_delete_confirmed(customer_code):
-    conn = get_db_connection()
+    conn = None # finallyブロックで使えるよう、tryの外で定義
     try:
+        conn = get_db_connection()
+        if not conn:
+            raise Exception("データベース接続に失敗しました。")
+
         action = request.form.get("action")
         if action == "submit_delete_approval":
             approver_id = request.form.get('approver_id')
@@ -513,22 +470,26 @@ def customer_delete_confirmed(customer_code):
                 cursor.execute(sql_request, ('ms01_customerlist', customer_code, '削除', None, requester_id, approver_id))
                 cursor.execute("UPDATE ms01_customerlist SET registration_status = %s WHERE customer_code = %s", (6, customer_code))
                 conn.commit()
-            # ここで完了画面
+            # 完了画面へ
             return render_template("shared/action_done.html", action_label="削除申請")
         
         elif action == "submit_delete_instant":
             with conn.cursor() as cursor:
                 cursor.execute("DELETE FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
                 conn.commit()
-            # ここで完了画面
+            # 完了画面へ
             return render_template("shared/action_done.html", action_label="削除")
+
     except Exception as e:
-        flash(f"処理中にエラーが発生しました: {e}", "error")
+        # DB接続や処理中に何らかのエラーが発生した場合
+        print(f"エラーが発生しました (customer_delete_confirmed): {e}")
+        flash("エラーが発生したため、削除処理を完了できませんでした。管理者にお問い合わせください。", "danger")
+    
     finally:
-        if conn.open:
+        if conn and conn.open:
             conn.close()
     
-    # どちらでもない場合は一覧に戻す
+    # エラーが発生した場合、または不正なactionの場合は顧客一覧に戻す
     return redirect(url_for('customerlist.show_customerlist'))
 
 # ==============================================================================

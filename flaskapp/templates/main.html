@@ -5,5 +5,25 @@
 {% block page_title %}ダッシュボード{% endblock %}
 
 {% block content %}
-  <p style="color: #666;">※ このエリアには、ダッシュボードとして表示する内容を後で追加予定です。</p>
+  {% if error_message %}
+    {# エラーメッセージが渡された場合 #}
+    <div class="alert alert-warning" role="alert">
+        <strong>警告:</strong> {{ error_message }}
+    </div>
+
+  {% elif data %}
+    {# データが正常に取得できた場合（将来利用するための準備） #}
+    <p>ここに取得したデータを表示します。</p>
+    {# 例: 
+    <ul>
+      {% for item in data %}
+        <li>{{ item.name }}</li>
+      {% endfor %}
+    </ul>
+    #}
+
+  {% else %}
+    {# エラーがなく、データもない場合（＝現在の状態） #}
+    <p style="color: #666;">※ このエリアには、ダッシュボードとして表示する内容を後で追加予定です。</p>
+  {% endif %}
 {% endblock %}
