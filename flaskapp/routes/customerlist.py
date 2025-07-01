@@ -2,10 +2,10 @@
 # 必要なライブラリをインポートします
 # ==============================================================================
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-import pymysql
 import datetime
 import json # 申請データをJSON形式で保存するためにインポート
 
+from flaskapp.utils.db import get_db_connection
 # 外部ファイルから、フォームで扱うフィールド名のリストを読み込みます
 from flaskapp.utils.ms01_customerlist_fields import field_names 
 from flaskapp.utils import dropdown_options 
@@ -18,13 +18,7 @@ customerlist_bp = Blueprint("customerlist", __name__)
 # ==============================================================================
 # ヘルパー関数
 # ==============================================================================
-def get_db_connection():
-    """データベース接続を取得します"""
-    return pymysql.connect(
-        host="localhost", user="root", password="mirai",
-        db="miraihosho_system", charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor
-    )
+
 
 def get_approvers(conn):
     """承認権限を持つ社員のリストを取得します"""
@@ -34,7 +28,7 @@ def get_approvers(conn):
             SELECT s.shain_code, s.shain_name
             FROM ms_shainlist s
             JOIN ms_auth_user a ON s.shain_code = a.user_id
-            WHERE a.role IN ('管理者', '社員A')
+            WHERE a.role IN (1,2,3,4,5)  -- マスター、管理者A、管理者B、管理者C、社員A
             ORDER BY s.shain_code
         """
         cursor.execute(sql)
@@ -61,8 +55,11 @@ def get_field_labels():
 # ==============================================================================
 # 顧客情報の一覧表示・検索機能
 # ==============================================================================
+# customerlist.py の中の関数をこれに置き換え
+
 @customerlist_bp.route("/masters/customerlist")
 def show_customerlist():
+    # 検索フィルターの値を取得
     filters = {
         "customer_code": request.args.get("customer_code", "").strip(),
         "name": request.args.get("name", "").strip(),
@@ -75,6 +72,7 @@ def show_customerlist():
     }
     has_search = any(filters.values())
     
+    # ページネーションの設定
     page_str = request.args.get("page", "1")
     page = int(page_str) if page_str.isdigit() else 1
     
@@ -83,11 +81,22 @@ def show_customerlist():
 
     offset = (page - 1) * limit
 
+    # データベース接続
     conn = get_db_connection()
+
+    # ★★★ 接続失敗時のチェック ★★★
+    if not conn:
+        flash("データベースに接続できませんでした。管理者にお問い合わせください。", "danger")
+        return render_template(
+            "masters/customerlist.html", customers=[], total=0, page=1, limit=limit, 
+            total_pages=0, filters=filters, has_search=has_search, 
+            selected_limit=str(limit), registration_status=constants.registration_status_MAP
+        )
+
     results = []
     total = 0
-
     try:
+        # 検索条件の組み立て
         where_clauses = ["1=1"]
         params = {}
 
@@ -118,11 +127,14 @@ def show_customerlist():
 
         where_sql = " AND ".join(where_clauses)
 
+        # データベース操作
         with conn.cursor() as cursor:
+            # 総件数を取得
             count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql}"
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['total'] or 0
             
+            # 表示するデータを取得
             params_with_limit = params.copy()
             params_with_limit['limit'] = limit
             params_with_limit['offset'] = offset
@@ -131,27 +143,15 @@ def show_customerlist():
             cursor.execute(sql, params_with_limit)
             results = cursor.fetchall()
 
-        date_fields_to_format = ["individual_birthDate", "corporate_foundationdate", "registration_date", "update_date"]
-        for customer in results:
-            # ステータスを数値に変換 (この処理を追加)
-            if customer.get('registration_status') is not None and str(customer.get('registration_status')).isdigit():
-                customer['registration_status'] = int(customer['registration_status'])
-            else:
-                customer['registration_status'] = None # 数値でない場合はNoneにして「不明」と表示させる
-
-            # 日付のフォーマット (既存の処理)
-            for field in date_fields_to_format:
-                if customer.get(field) and isinstance(customer.get(field), (datetime.date, datetime.datetime)):
-                    customer[field] = customer[field].strftime('%Y-%m-%d')
-            
-            # Noneを空文字に変換 (既存の処理)
-            for key, value in customer.items():
-                if value is None:
-                    customer[key] = ''
+    except Exception as e:
+        flash(f"データの取得中にエラーが発生しました: {e}", "danger")
+        total = 0
+        results = []
     finally:
-        if conn.open:
+        if conn:
             conn.close()
             
+    # テンプレートに渡す値を計算
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
     return render_template(
