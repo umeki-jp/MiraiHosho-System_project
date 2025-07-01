@@ -1,90 +1,98 @@
 import csv
 import os
-import mysql.connector
-from mysql.connector import errorcode
+import re  # カッコを除去するために正規表現ライブラリをインポート
+import pymysql
+from db_config import DB_CONFIG
 
-# --- MySQL接続設定 ---
-# ご自身の環境に合わせて設定を変更してください
-DB_CONFIG = {
-    'user': 'root', 
-    'password': 'mirai',
-    'host': '127.0.0.1', 
-    'database': 'miraihosho_system'
-}
-
-# --- その他設定 ---
+# --- 設定 ---
 CSV_FILE = 'KEN_ALL.CSV'
 TABLE_NAME = 'postal_codes'
 
-def import_data_to_mysql():
+def import_postal_data():
+    """
+    日本郵便の郵便番号データ（KEN_ALL.CSV）をクリーンアップして、
+    データベースにインポートします。
+    """
     if not os.path.exists(CSV_FILE):
         print(f"エラー: {CSV_FILE} が見つかりません。")
         return
 
+    conn = None
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        # --- 1. データベースに接続 ---
+        conn = pymysql.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        print(f"データベース '{DB_CONFIG['database']}' に接続しました。")
+        print(f"データベース '{DB_CONFIG['db']}' に接続しました。")
 
+        # --- 2. テーブルを一旦空にする ---
         print(f"テーブル '{TABLE_NAME}' の既存データを削除します...")
         cursor.execute(f"TRUNCATE TABLE {TABLE_NAME}")
-        print("データ削除完了。")
 
+        # --- 3. CSVを読み込み、1行ずつデータを登録 ---
         print("CSVデータのインポートを開始します...")
-        count = 0
-        # INSERT IGNOREは、万が一他の原因で重複が発生した場合も処理を止めないため、念のため残しておきます。
-        sql_insert = (
+        sql = (
+            # 重複データはエラーにせず無視する
             f"INSERT IGNORE INTO {TABLE_NAME} "
             "(postal_code, prefecture, city, town, prefecture_kana, city_kana, town_kana) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s)"
         )
 
+        record_count = 0
         with open(CSV_FILE, 'r', encoding='shift_jis') as f:
-            reader = csv.reader(f)
-            for row in reader:
+            for row in csv.reader(f):
+                # CSVの各列からデータを取得
                 postal_code = row[2]
-                prefecture_kana = row[3]
-                city_kana = row[4]
-                town_kana = row[5]
                 prefecture = row[6]
                 city = row[7]
                 town = row[8]
+                prefecture_kana = row[3]
+                city_kana = row[4]
+                town_kana = row[5]
+
+                # --- データ加工処理 ---
+                # (1) 「以下に掲載がない場合」という町名は、空文字に変換
+                if '以下に掲載がない場合' in town:
+                    town = ''
                 
-                if town == '以下に掲載がない場合':
-                    town, town_kana = '', ''
-                
-                # 「、」で町名が分割されているケースには対応
+                # (2) 町名のカッコ（〜）とその中身を削除
+                # 例：「駅前町（次のビルを除く）」 -> 「駅前町」
+                town = re.sub(r'（.*）', '', town)
+
+                # (3) 「、」で区切られた町名を分割して、それぞれ別のレコードとして登録
                 towns = town.split('、')
-                towns_kana = town_kana.split('、')
+                
+                for t in towns:
+                    # 分割後の町名で、さらに不要なカッコが残っていれば削除
+                    # カナの町名も同様に処理しますが、分割は漢字の町名に合わせます
+                    processed_town = re.sub(r'\(.*\)', '', t).strip()
+                    
+                    # カナの処理はシンプルに（分割は考慮しない）
+                    processed_town_kana = re.sub(r'\(.*\)', '', town_kana).strip()
 
-                for i, t in enumerate(towns):
-                    t_kana = towns_kana[i] if i < len(towns_kana) else ''
+                    data_to_insert = (
+                        postal_code, prefecture, city, processed_town,
+                        prefecture_kana, city_kana, processed_town_kana
+                    )
+                    cursor.execute(sql, data_to_insert)
                     
-                    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-                    # (かっこ)やその中身を削除する処理をなくし、元のデータをそのまま使用します。
-                    # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-                    
-                    data = (postal_code, prefecture, city, t, prefecture_kana, city_kana, t_kana)
-                    cursor.execute(sql_insert, data)
-                    
+                    # 実際に登録された件数のみカウント
                     if cursor.rowcount > 0:
-                        count += 1
+                        record_count += 1
         
+        # --- 4. 変更をデータベースに反映 ---
         conn.commit()
-        print(f"インポートが完了しました。{count}件のレコードを登録しました。")
+        print(f"インポート完了。{record_count}件のレコードを登録しました。")
 
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("ユーザー名またはパスワードが間違っています。")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print(f"データベース '{DB_CONFIG['database']}' が存在しません。")
-        else:
-            print(err)
+    except pymysql.MySQLError as e:
+        print(f"データベースエラーが発生しました: {e}")
+        if conn:
+            conn.rollback()  # エラー時は変更を元に戻す
+
     finally:
-        if 'conn' in locals() and conn.is_connected():
-            cursor.close()
+        # --- 5. 接続を閉じる ---
+        if conn:
             conn.close()
             print("MySQLとの接続を閉じました。")
 
 if __name__ == '__main__':
-    import_data_to_mysql()
+    import_postal_data()
