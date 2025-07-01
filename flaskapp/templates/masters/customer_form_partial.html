@@ -14,8 +14,8 @@
   <div class="row">
     <label for="registration_status" class="col-sm-2 col-form-label">ステータス</label>
     <div class="col-sm-10">
-      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ status_map[form_data.registration_status] or '未定義' }}</div>
-      <input type="hidden" name="registration_status" style="max-width: 10em;" value="{{ form_data.registration_status or 0 }}">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ registration_status[form_data.registration_status] or '未定義' }}</div>
+<input type="hidden" name="registration_status" style="max-width: 10em;" value="{{ form_data.registration_status or 0 }}">
     </div>
   </div>
 

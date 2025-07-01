@@ -48,7 +48,15 @@
         {{ ui.search_input("勤務先", "workplace", filters.workplace or "") }}
       </div>
       <div class="col-md-4">
-        {{ ui.search_input("登録状況", "registration_status", filters.registration_status or "") }}
+        <label for="registration_status" class="form-label">登録状況</label>
+  <select name="registration_status" id="registration_status" class="form-select form-select-sm">
+    <option value="">すべて</option>
+    {% for key, value in registration_status.items() %}
+      <option value="{{ key }}" {% if filters.registration_status == key|string %}selected{% endif %}>
+        {{ value }}
+      </option>
+    {% endfor %}
+  </select>
       </div>
       <div class="col-md-6">
         {# 日付範囲の入力欄はBootstrapのインプットグループを使うと綺麗にまとまる #}
@@ -85,7 +93,7 @@
               </a>
               </td>
               <td class="col-status">
-                {{ status_map.get(c.registration_status, '不明') }}
+               {{ registration_status.get(c.registration_status, '不明') }}
               </td>
               <td class="col-code">{{ c.customer_code or '' }}</td>
               <td class="col-customer">{{ c.name or '' }}</td>

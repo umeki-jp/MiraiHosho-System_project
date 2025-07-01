@@ -9,19 +9,12 @@ import json # 申請データをJSON形式で保存するためにインポー�
 # 外部ファイルから、フォームで扱うフィールド名のリストを読み込みます
 from flaskapp.utils.ms01_customerlist_fields import field_names 
 from flaskapp.utils import dropdown_options 
+from flaskapp.common import constants
 
 # このファイル（customerlist.py）を 'customerlist_bp' という名前でBlueprintとして登録します
 customerlist_bp = Blueprint("customerlist", __name__)
 
-STATUS_MAP = {
-    0: "未登録",
-    1: "登録済",
-    # 以下は今後の拡張用
-    # 2: "承認待",
-    # 3: "差し戻し",
-    # 4: "確定",
-    # 5: "削除済"
-}
+
 # ==============================================================================
 # ヘルパー関数
 # ==============================================================================
@@ -171,7 +164,7 @@ def show_customerlist():
         filters=filters, 
         has_search=has_search, 
         selected_limit=str(limit),
-        status_map=STATUS_MAP  # この行を追加
+        registration_status=constants.registration_status_MAP
     )
 
 # ==============================================================================
@@ -203,7 +196,8 @@ def customer_new():
                         mode="create", 
                         page_title="新規 顧客登録", 
                         button_config=button_config,
-                        status_map=STATUS_MAP # この行を追加
+                        registration_status=constants.registration_status_MAP
+                        
                     )
 
             if not form_data.get("name"):
@@ -214,7 +208,8 @@ def customer_new():
                     mode="create", 
                     page_title="新規 顧客登録", 
                     button_config=button_config,
-                    status_map=STATUS_MAP # この行を追加
+                    registration_status=constants.registration_status_MAP
+                    
                 )
 
             if action == "request_new_approval":
@@ -287,7 +282,7 @@ def customer_new():
             mode="create", 
             page_title="新規 顧客登録", 
             button_config=button_config,
-            status_map=STATUS_MAP # テンプレートで使えるようにstatus_mapを渡す
+            registration_status=constants.registration_status_MAP # テンプレートで使えるようにstatus_mapを渡す
         )
         
     finally:
@@ -422,7 +417,7 @@ def customer_edit(customer_code):
                     """
                     request_data_json = json.dumps(form_data, ensure_ascii=False)
                     cursor.execute(sql_request, ('ms01_customerlist', customer_code, '更新', request_data_json, requester_id, approver_id))
-                    cursor.execute("UPDATE ms01_customerlist SET registration_status = '更新承認待ち' WHERE customer_code = %s", (customer_code,))
+                    cursor.execute("UPDATE ms01_customerlist SET registration_status = %s WHERE customer_code = %s", (2, customer_code))
                     conn.commit()
                 flash("顧客情報の更新を申請しました。", "success")
                 return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
@@ -476,7 +471,7 @@ def customer_edit(customer_code):
             form_data=customer, 
             mode="edit", 
             button_config=button_config,
-            status_map=STATUS_MAP # この行を追加
+            registration_status=constants.registration_status_MAP # この行を修正
         )    
 
     finally:
@@ -500,7 +495,7 @@ def customer_delete_confirmed(customer_code):
                     VALUES (%s, %s, %s, %s, %s, %s, '申請中')
                 """
                 cursor.execute(sql_request, ('ms01_customerlist', customer_code, '削除', None, requester_id, approver_id))
-                cursor.execute("UPDATE ms01_customerlist SET registration_status = '削除承認待ち' WHERE customer_code = %s", (customer_code,))
+                cursor.execute("UPDATE ms01_customerlist SET registration_status = %s WHERE customer_code = %s", (6, customer_code))
                 conn.commit()
             # ここで完了画面
             return render_template("shared/action_done.html", action_label="削除申請")
