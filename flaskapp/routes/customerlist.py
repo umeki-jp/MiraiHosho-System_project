@@ -27,7 +27,7 @@ def get_approvers(conn):
         sql = """
             SELECT s.shain_code, s.shain_name
             FROM ms_shainlist s
-            JOIN ms_auth_user a ON s.shain_code = a.user_id
+            JOIN ms_auth_user a ON s.shain_code = a.shain_code
             WHERE a.role IN (1,2,3,4,5)  -- マスター、管理者A、管理者B、管理者C、社員A
             ORDER BY s.shain_code
         """
@@ -306,23 +306,76 @@ def customer_new():
 def customer_edit(customer_code):
     conn = get_db_connection()
     try:
+        # --- [POST] フォームのボタンが押された時の処理 ---
         if request.method == "POST":
             action = request.form.get("action")
             
-            if action in ["update_instant", "request_update_approval"]:
+            if action == 'approve':
+                approval_request_id = request.form.get('approval_request_id')
+                with conn.cursor() as cursor:
+                    # 承認対象の申請データを取得
+                    cursor.execute("SELECT request_data FROM ts51_approval_requests WHERE id = %s", (approval_request_id,))
+                    request_data_json = cursor.fetchone()['request_data']
+                    form_data = json.loads(request_data_json)
+
+                    # 顧客テーブルを更新する処理
+                    update_parts = []
+                    values = []
+                    for f in field_names:
+                        if f in ["registration_date", "registration_shain", "update_date", "update_shain"]: continue
+                        values.append(form_data.get(f))
+                        update_parts.append(f"{f} = %s")
+                    
+                    update_parts.append("registration_status = %s") # ステータスを「登録済」に
+                    values.append(1)
+                    update_parts.append("update_date = %s")
+                    values.append(datetime.datetime.now())
+                    update_parts.append("update_shain = %s")
+                    values.append(session.get('shain_name', '不明なユーザー')) # 更新者は承認者
+                    values.append(customer_code)
+
+                    sql = f"UPDATE ms01_customerlist SET {', '.join(update_parts)} WHERE customer_code = %s"
+                    cursor.execute(sql, values)
+
+                    # 申請リクエストのステータスを「承認済」に更新
+                    cursor.execute("UPDATE ts51_approval_requests SET status = 1 WHERE id = %s", (approval_request_id,))
+                    conn.commit()
+                flash(f"顧客情報（{customer_code}）の更新を承認しました。", "success")
+                return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
+
+            # ###【差戻し】処理 ###
+            elif action == 'reject':
+                approval_request_id = request.form.get('approval_request_id')
+                with conn.cursor() as cursor:
+                    # ▼▼▼【ここを修正】▼▼▼
+                    # 顧客ステータスを「3: 差戻し」に更新
+                    cursor.execute("UPDATE ms01_customerlist SET registration_status = 3 WHERE customer_code = %s", (customer_code,))
+                    cursor.execute("UPDATE ts51_approval_requests SET status = 2 WHERE id = %s", (approval_request_id,))
+                    conn.commit()
+                flash(f"申請を差戻しました。", "warning")
+                return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
+
+            # ###【取下げ】処理 ###
+            elif action == 'withdraw_request':
+                approval_request_id = request.form.get('approval_request_id')
+                with conn.cursor() as cursor:
+                    cursor.execute("UPDATE ms01_customerlist SET registration_status = 1 WHERE customer_code = %s", (customer_code,))
+                    cursor.execute("UPDATE ts51_approval_requests SET status = 3 WHERE id = %s", (approval_request_id,))
+                    conn.commit()
+                flash(f"申請を取り下げました。", "info")
+                return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
+            
+            # (POST処理のロジックは、次のステップで修正しますので、一旦このままにします)
+            elif action in ["update_instant", "request_update_approval"]:
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
-                
-                # ▼▼▼ 修正 ▼▼▼ (ここから日付妥当性チェックを追加)
                 birth_date_str = form_data.get("individual_birthDate")
-                if birth_date_str: # 日付が入力されている場合のみチェック
+                if birth_date_str:
                     try:
                         datetime.datetime.strptime(birth_date_str, '%Y%m%d')
                     except ValueError:
                         flash("個人_生年月日に入力された日付が正しくありません。(例: 19800230)", "error")
-                        # 編集モードで元のフォーム画面に戻す
                         button_config = {"show_instant_update": True, "show_approval_update": True, "show_instant_delete": True, "show_approval_delete": True}
                         return render_template("masters/customer_form.html", form_data=form_data, mode="edit", button_config=button_config)
-                # ▲▲▲ 修正 ▲▲▲ (チェックここまで)
                 
                 with conn.cursor() as cursor:
                     cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
@@ -332,42 +385,26 @@ def customer_edit(customer_code):
                     flash("更新対象の顧客データが見つかりません。", "error")
                     return redirect(url_for('customerlist.show_customerlist'))
 
-                # ▼▼▼ 修正 ▼▼▼ (スクリーンショットの問題を解決するための新しい比較ロジック)
                 changes = []
                 field_labels = get_field_labels()
-
-                # フィールドの種別を定義
                 datetime_local_fields = ["registration_date", "update_date"]
                 yyyymmdd_fields = ["individual_birthDate", "corporate_foundationdate"]
-
                 for field in field_names:
                     before_val = before_data.get(field)
-                    after_val = form_data.get(field, '') # キーが存在しない場合も考慮し、デフォルト値を空文字に
-
-                    # 比較のために、両方の値を文字列に正規化する
+                    after_val = form_data.get(field, '')
                     before_str = ""
                     after_str = str(after_val)
-
-                    # before_val (DBからの値) をフィールドの種別に応じて文字列に変換
                     if field in datetime_local_fields:
                         if isinstance(before_val, datetime.datetime):
-                            # 「YYYY-MM-DDTHH:MM」形式に変換
                             before_str = before_val.strftime('%Y-%m-%dT%H:%M')
                     elif field in yyyymmdd_fields:
                         if isinstance(before_val, datetime.date):
-                            # 「YYYYMMDD」形式に変換
                             before_str = before_val.strftime('%Y%m%d')
                     elif before_val is not None:
-                        # その他のフィールドは単純に文字列に変換
                         before_str = str(before_val)
-
-                    # 変更があったか比較
                     if before_str != after_str:
-                        changes.append({
-                            "label": field_labels.get(field, field),
-                            "before": before_str,
-                            "after": after_str
-                        })                
+                        changes.append({"label": field_labels.get(field, field), "before": before_str, "after": after_str})
+                
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
@@ -379,60 +416,42 @@ def customer_edit(customer_code):
 
             elif action == "submit_update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
-                 # 郵便番号を「NNN-NNNN」形式に強制フォーマット
                 for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
                     code = form_data.get(field)
                     if code:
                         digits = code.replace('-', '')
                         if len(digits) == 7 and digits.isdigit():
                             form_data[field] = f"{digits[:3]}-{digits[3:]}"
-                
                 with conn.cursor() as cursor:
-                    datetime_fields = ["individual_birthDate", "corporate_foundationdate"] # 登録/更新日時はサーバーで設定するため除外
+                    datetime_fields = ["individual_birthDate", "corporate_foundationdate"]
                     integer_fields = ["individual_age"]
-                    
-                    # 更新するカラムと値を動的に作成
                     update_parts = []
                     values = []
-                    
-                    # フォームから送信された値をセット
                     for f in field_names:
-                        # 登録/更新日時はフォームの値を使わない
                         if f in ["registration_date", "registration_shain", "update_date", "update_shain"]:
                             continue
-                        
                         val = form_data.get(f, "")
                         if (f in datetime_fields or f in integer_fields) and val == "":
                             values.append(None)
                         else:
                             values.append(val)
                         update_parts.append(f"{f} = %s")
-
-                    # 更新日時と更新者をサーバー側で設定
                     update_parts.append("update_date = %s")
                     values.append(datetime.datetime.now())
-                    
                     update_parts.append("update_shain = %s")
                     values.append(session.get('shain_name', '不明なユーザー'))
-
-                    # WHERE句のための顧客コードを最後に追加
                     values.append(customer_code)
-
                     sql = f"UPDATE ms01_customerlist SET {', '.join(update_parts)} WHERE customer_code = %s"
                     cursor.execute(sql, values)
                     conn.commit()
                 return render_template("shared/action_done.html", action_label="更新")
-            # ▲▲▲【ここまで修正】▲▲▲
 
             elif action == "submit_update_approval":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 approver_id = request.form.get('approver_id')
                 with conn.cursor() as cursor:
                     requester_id = 'admin' # 仮
-                    sql_request = """
-                        INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, '申請中')
-                    """
+                    sql_request = "INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status) VALUES (%s, %s, %s, %s, %s, %s, 0)"
                     request_data_json = json.dumps(form_data, ensure_ascii=False)
                     cursor.execute(sql_request, ('ms01_customerlist', customer_code, '更新', request_data_json, requester_id, approver_id))
                     cursor.execute("UPDATE ms01_customerlist SET registration_status = %s WHERE customer_code = %s", (2, customer_code))
@@ -451,21 +470,77 @@ def customer_edit(customer_code):
                 else:
                     deletable = True
                     message = f"本当に「{customer_code}」を削除しますか？"
-                
                 is_approval_flow = (action == "request_delete_approval")
                 approvers = get_approvers(conn) if is_approval_flow and deletable else None
                 final_action_value = "submit_delete_approval" if is_approval_flow else "submit_delete_instant"
                 return render_template("shared/delete_confirm.html", message=message, deletable=deletable, submit_url=url_for('customerlist.customer_delete_confirmed', customer_code=customer_code), approvers=approvers, is_approval_flow=is_approval_flow, final_action_value=final_action_value)
 
-        button_config = {"show_instant_update": True, "show_approval_update": True, "show_instant_delete": True, "show_approval_delete": True}
+        # --- [GET] 編集ページを最初に表示する時の処理 ---
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
             customer = cursor.fetchone()
+        
         if not customer:
             flash("指定された顧客が見つかりませんでした。", "error")
             return redirect(url_for("customerlist.show_customerlist"))
         
-        # ▼▼▼【ここに追加】ステータスを数値型に変換 ▼▼▼
+        # --- ▼▼▼ ここからが新しいロジック ▼▼▼ ---
+        
+        approval_request = None
+        button_config = {}
+        customer_status = customer.get('registration_status')
+
+        # 1. 顧客ステータスに応じて表示を切り替える
+        # ステータスが「2: 承認待ち」の場合
+        if customer_status == 2:
+            with conn.cursor() as cursor:
+                sql = "SELECT * FROM ts51_approval_requests WHERE target_id = %s AND status = 0 ORDER BY created_at DESC LIMIT 1"
+                cursor.execute(sql, (customer_code,))
+                approval_request = cursor.fetchone()
+
+            if approval_request:
+                current_user_shain_code = session.get('shain_code')
+                current_user_role = session.get('role')
+                if current_user_shain_code == approval_request['approver_id']:
+                    button_config = {"show_approve": True, "show_reject": True, "show_close": True}
+                elif current_user_shain_code == approval_request['requester_id'] or current_user_role in [1, 2, 3, 4]:
+                    button_config = {"show_withdraw": True, "show_close": True}
+                else:
+                    button_config = {"show_close": True}
+        
+        # ステータスが「3: 差戻し」の場合
+        elif customer_status == 3:
+            # ボタンは「通常時」と同じものを表示
+            button_config = {
+                "show_instant_update": True, "show_approval_update": True, 
+                "show_instant_delete": True, "show_approval_delete": True
+            }
+            # メッセージ表示用に、差戻された申請の情報を取得
+            with conn.cursor() as cursor:
+                sql = "SELECT * FROM ts51_approval_requests WHERE target_id = %s AND status = 2 ORDER BY created_at DESC LIMIT 1"
+                cursor.execute(sql, (customer_code,))
+                approval_request = cursor.fetchone()
+
+        # ステータスが上記以外の通常時（1: 登録済など）
+        else:
+            button_config = {
+                "show_instant_update": True, "show_approval_update": True, 
+                "show_instant_delete": True, "show_approval_delete": True
+            }
+
+        # 2. 次に、差戻しメッセージを表示するために「差戻し状態の申請」がないか別途チェック
+        if customer.get('registration_status') == 1:
+            with conn.cursor() as cursor:
+                sql = "SELECT * FROM ts51_approval_requests WHERE target_id = %s AND status = 2 ORDER BY created_at DESC LIMIT 1"
+                cursor.execute(sql, (customer_code,))
+                # 差戻し情報があれば、メッセージ表示用に approval_request 変数にセットする
+                rejected_request = cursor.fetchone()
+                if rejected_request:
+                    approval_request = rejected_request
+
+        # --- ▲▲▲ 新しいロジックここまで ▲▲▲ ---
+
+        # --- テンプレートに渡すためのデータ整形 ---
         if customer.get('registration_status') is not None:
             customer['registration_status'] = int(customer['registration_status'])
 
@@ -477,19 +552,19 @@ def customer_edit(customer_code):
 
         for field in ["registration_date", "update_date"]:
             if customer.get(field) and isinstance(customer.get(field), (datetime.date, datetime.datetime)):
-                # datetime-local の形式 'YYYY-MM-DDTHH:MM' に合わせる
                 customer[field] = customer[field].strftime('%Y-%m-%dT%H:%M')
 
         for key, value in customer.items():
             if value is None:
                 customer[key] = ''
-        # テンプレートに status_map を渡す
+                
         return render_template(
             "masters/customer_form.html", 
             form_data=customer, 
             mode="edit", 
             button_config=button_config,
-            registration_status=constants.registration_status_MAP # この行を修正
+            approval_request=approval_request,
+            registration_status=constants.registration_status_MAP
         )    
 
     finally:

@@ -4,65 +4,107 @@
 {# ============================================================================== #}
 {# このブロックに、表示するボタンのロジックをすべて一度だけ定義します。 #}
 {# ============================================================================== #}
+{# ============================================================================== #}
+{# このブロックに、表示するボタンのロジックをすべて一度だけ定義します。 #}
+{# ============================================================================== #}
 {% block left_buttons %}
   {# ---------------------------------------------------------------- #}
   {# 詳細画面 (編集モード) のボタン #}
   {# ---------------------------------------------------------------- #}
   {% if mode == "edit" %}
     <input type="hidden" name="customer_code" value="{{ form_data.customer_code or '' }}">
-
-    {# 即時実行ボタン #}
-    {% if button_config.show_instant_update %}
-      <button type="submit" name="action" value="update_instant" class="form-action-btn">更新</button>
-    {% endif %}
-    {% if button_config.show_instant_delete %}
-      <button type="submit" name="action" value="delete_instant" class="form-action-btn btn-negative"> 削除</button>
-    {% endif %}
-
-    {# ボタンの見た目を分けるための区切り線 #}
-    <div class="vr mx-2"></div> 
-
-    {# 承認申請ボタン #}
-    {% if button_config.show_approval_update %}
-      <button type="submit" name="action" value="request_update_approval" class="form-action-btn">更新申請</button>
-    {% endif %}
-    {% if button_config.show_approval_delete %}
-      <button type="submit" name="action" value="request_delete_approval" class="form-action-btn btn-negative">削除申請</button>
-    {% endif %}
     
-    {# 閉じるボタンは常に表示 #}
-    <button type="button" class="form-action-btn btn-negative" onclick="window.close();">閉じる</button>
+    {% if approval_request %}
+      <input type="hidden" name="approval_request_id" value="{{ approval_request.id }}">
+    {% endif %}
+
+    {# ▼▼▼【ここからロジックを修正】▼▼▼ #}
+    
+    {# --- ステータスが「2: 承認待ち」の場合の専用ボタン --- #}
+    {% if form_data.registration_status == 2 %}
+
+        {# --- 承認者の場合 --- #}
+        {% if button_config.show_approve %}
+            <button type="submit" name="action" value="approve" class="form-action-btn btn-success">承認する</button>
+            <button type="submit" name="action" value="reject" class="form-action-btn btn-danger">差戻し</button>
+        
+        {# --- 申請者・管理者の場合 --- #}
+        {% elif button_config.show_withdraw %}
+            <button type="submit" name="action" value="withdraw_request" class="form-action-btn btn-warning">取下げ</button>
+        {% endif %}
+        
+        <button type="button" class="form-action-btn btn-negative" onclick="window.close();">閉じる</button>
+
+    {# --- 通常時（登録済、差戻しなど）のボタン --- #}
+    {% else %}
+        {% if button_config.show_instant_update %}
+          <button type="submit" name="action" value="update_instant" class="form-action-btn">更新</button>
+        {% endif %}
+        {% if button_config.show_approval_update %}
+          <button type="submit" name="action" value="request_update_approval" class="form-action-btn">更新申請</button>
+        {% endif %}
+        
+        <div class="vr mx-2"></div>
+        
+        {% if button_config.show_instant_delete %}
+          <button type="submit" name="action" value="delete_instant" class="form-action-btn btn-negative">削除</button>
+        {% endif %}
+        {% if button_config.show_approval_delete %}
+          <button type="submit" name="action" value="request_delete_approval" class="form-action-btn btn-negative">削除申請</button>
+        {% endif %}
+        
+        <button type="button" class="form-action-btn btn-negative" onclick="window.close();">閉じる</button>
+    {% endif %}
+
+    {# ▲▲▲【ロジック修正ここまで】▲▲▲ #}
   
   {# ---------------------------------------------------------------- #}
   {# 新規登録画面のボタン #}
   {# ---------------------------------------------------------------- #}
   {% else %}
-    {# 即時実行ボタン #}
     {% if button_config.show_instant_register %}
       <button type="submit" name="action" value="register_instant" class="form-action-btn">登録</button>
     {% endif %}
-
-    {# ボタンの見た目を分けるための区切り線 #}
     <div class="vr mx-2"></div>
-
-    {# 承認申請ボタン #}
     {% if button_config.show_approval_register %}
       <button type="submit" name="action" value="request_new_approval" class="form-action-btn">登録申請</button>
     {% endif %}
-    
-    {# 閉じるボタンは常に表示 #}
     <button type="button" class="form-action-btn btn-negative" onclick="window.close();">登録せず閉じる</button>
   {% endif %}
 {% endblock %}
-
 
 {# ============================================================================== #}
 {# メインコンテンツ部分。フォームの入力欄を読み込み、下部にもボタンを再表示します。 #}
 {# ============================================================================== #}
 {% block main_content %}
+
+  {# ▼▼▼【ここからが新しいメッセージ表示エリア】▼▼▼ #}
+  {% if approval_request %}
+    {# --- 差戻し(status=2)の場合 --- #}
+    {% if approval_request.status == 2 %}
+      <div class="alert alert-danger mb-4" role="alert">
+        <h5 class="alert-heading">差戻し</h5>
+        <p class="mb-0">この申請は差戻されました。内容を修正して再度、更新申請を行ってください。</p>
+      </div>
+    {# --- 承認待ち(status=0)の場合 --- #}
+    {% elif approval_request.status == 0 %}
+      <div class="alert alert-warning mb-4" role="alert">
+        <h5 class="alert-heading">承認待ち</h5>
+        <p>この顧客情報は現在、承認待ちです。</p>
+        <hr>
+        <p class="mb-0">
+          <strong>申請種別:</strong> {{ approval_request.request_type }} <br>
+          <strong>申請者ID:</strong> {{ approval_request.requester_id }} <br>
+          <strong>承認者ID:</strong> {{ approval_request.approver_id }}
+        </p>
+      </div>
+    {% endif %}
+  {% endif %}
+  {# ▲▲▲【ここまでが新しいメッセージ表示エリア】▲▲▲ #}
+
+  {# --- ここから下は元のコードです --- #}
   {% include "masters/customer_form_partial.html" %}
   
-  <!-- 下部にも同じボタン群を配置 -->
   <div class="form-action-btns mt-4">
     {# 上で定義した 'left_buttons' ブロックの内容をここで再利用します #}
     {{ self.left_buttons() }}
