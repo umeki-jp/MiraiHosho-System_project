@@ -177,37 +177,7 @@ postalFields.forEach(field => {
     // 日付・ユーザー自動セット例
     const isNewMode = document.title.includes("新規");
     
-    if (isNewMode) {
-        // --- 新規登録画面の場合のみ、以下の処理を実行 ---
-        const now = new Date();
-        const currentUser = 'システム管理者'; // 本来は認証システムから取得
-
-        // タイムゾーンのズレを補正して 'YYYY-MM-DDTHH:MM' 形式の文字列を生成
-        const tzOffset = now.getTimezoneOffset() * 60000;
-        const localISOTime = new Date(now - tzOffset).toISOString().slice(0, 16);
-
-        // 「登録日」と「登録者」の入力欄を取得
-        const regDateInput = document.querySelector('input[name="registration_date"]');
-        const regShainInput = document.querySelector('input[name="registration_shain"]');
-
-        // 入力欄が空の場合のみ、現在の日時とユーザーをセット
-        if (regDateInput && !regDateInput.value) {
-            regDateInput.value = localISOTime;
-        }
-        if (regShainInput && !regShainInput.value) {
-            regShainInput.value = currentUser;
-        }
-
-        // 新規登録時は更新日・更新者は空にする
-        const updDateInput = document.querySelector('input[name="update_date"]');
-        const updShainInput = document.querySelector('input[name="update_shain"]');
-        if (updDateInput) {
-            updDateInput.value = "";
-        }
-        if (updShainInput) {
-            updShainInput.value = "";
-        }
-    }
+    
 
     const ageSpan = document.getElementById('age_display');
     if (birthDateInput && seirekiSpan && warekiSpan && ageSpan) {
