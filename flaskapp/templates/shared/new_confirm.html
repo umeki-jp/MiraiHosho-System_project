@@ -1,0 +1,42 @@
+{% extends "form_page_base.html" %}
+{% set page_title = "承認者の選択" %}
+
+{% block main_content %}
+  <form method="POST" action="{{ submit_url }}">
+    {# 前の画面で入力したデータを、非表示のまま次の処理に引き渡す #}
+    {% for key, value in form_data.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value or '' }}">
+    {% endfor %}
+
+    {# この画面で最終的に実行されるアクション名を指定 #}
+    <input type="hidden" name="action" value="{{ final_action_value }}">
+
+    {# メッセージ #}
+    <div class="alert alert-info" role="alert">
+      <p class="mb-0">承認者を選択して、登録申請を完了してください。</p>
+    </div>
+
+    {# 承認者選択ドロップダウン #}
+    <div class="row justify-content-center my-4">
+      <div class="col-md-6" style="max-width: 350px;">
+        <div class="input-group">
+          <label for="approver_id" class="input-group-text"><strong>承認者 <span class="text-danger">*</span></strong></label>
+          <select name="approver_id" id="approver_id" class="form-select" required>
+              <option value="">選択してください</option>
+              {% for approver in approvers %}
+                  <option value="{{ approver.shain_code }}">{{ approver.shain_name }}</option>
+              {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {# ボタン #}
+    <div class="text-center mt-4">
+      <div class="d-inline-flex gap-2">
+        <button type="submit" class="btn btn-primary">登録申請</button>
+        <button type="button" class="btn btn-secondary" onclick="history.back()">戻る</button>
+      </div>
+    </div>
+  </form>
+{% endblock %}

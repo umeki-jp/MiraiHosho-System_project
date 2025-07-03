@@ -1,0 +1,20 @@
+{% if changes %}
+<table class="table table-bordered table-sm" style="background-color: #fff6e9;">
+    <thead class="table-light">
+        <tr>
+            <th style="width: 30%;">項目</th>
+            <th style="width: 35%;">変更前</th>
+            <th style="width: 35%;">変更後</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for change in changes %}
+        <tr>
+            <td>{{ change.label }}</td>
+            <td class="text-muted">{{ change.before or '' }}</td>
+            <td><strong>{{ change.after or '' }}</strong></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}

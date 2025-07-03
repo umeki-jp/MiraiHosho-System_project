@@ -13,24 +13,7 @@
     </div>
 
     {# 変更内容テーブル #}
-    <table class="table table-bordered table-sm my-4">
-      <thead class="table-light">
-        <tr>
-          <th class="col-label" style="width: 25%;">項目</th>
-          <th class="col-before" style="width: 37.5%;">変更前</th>
-          <th class="col-after" style="width: 37.5%;">変更後</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for change in changes %}
-          <tr>
-            <td class="col-label">{{ change.label }}</td>
-            <td class="col-before text-muted">{{ change.before or '' }}</td>
-            <td class="col-after"><strong>{{ change.after or '' }}</strong></td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% include 'shared/_change_table.html' %}
   </div>
 
   <form method="POST" action="{{ submit_url }}">

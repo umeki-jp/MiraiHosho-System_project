@@ -37,7 +37,8 @@ def create_app():
     def inject_user_info():
         """全てのテンプレートに共通のユーザー情報を渡す"""
         user_info = {
-            'shain_name': session.get('shain_name', '') # ログインしていない場合は空文字
+            'shain_name': session.get('shain_name', ''),
+            'role': session.get('role', 0)  # ← roleも渡すように追加（未ログイン時は0）
         }
         return user_info
 

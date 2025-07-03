@@ -478,7 +478,7 @@
   
 </head>
 
-<body>
+<body data-user-role="{{ role|int or 0 }}">
   <!-- 上部ヘッダー -->
   <header class="topbar">
   <!-- 左スペース（空白やロゴ） -->
@@ -532,7 +532,8 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // menuDataの先頭にTOPを追加
+    const userRoleElement = document.body;
+    const userRole = userRoleElement ? parseInt(userRoleElement.dataset.userRole, 10) : 0;
     const menuData = [
       { title: "トップ", link: "{{ url_for('main.main_page') }}" },
       { title: "申込一覧", link: "/applications/applicationslist" },
@@ -584,11 +585,20 @@
           { title: "05 プラン", link: "/masters/planlist" },
           { title: "06 仲介", link: "/masters/brokerlist" },
           { title: "07 緊急・入居者", link: "/masters/otherlist" },
-          { title: "社員一覧", link: "/masters/shainlist" },
-          { title: "認証管理", link: "/masters/auth_user" }
+          { title: "社員一覧", link: "/masters/ms_shainlist" }
         ]
       }
     ];
+
+    if (userRole === 1) { // マスター権限の場合のみ「設定」メニューを追加
+        menuData.push({
+            title: "設定(マスター用)",
+            children: [
+                { title: "認証管理", link: "/masters/ms_auth_user" },
+                { title: "承認機能管理", link: "/settings/approval_management" }
+            ]
+        });
+    }
 
     // 2. サイドメニューul#menu-listが空のまま→renderMenuで必ず生成
     function renderMenu(data) {
