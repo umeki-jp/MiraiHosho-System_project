@@ -35,7 +35,7 @@ def get_field_labels():
     """日本語の項目名リストを返します"""
     return {
         "customer_code": "顧客コード", "name": "名前", "name_kana": "フリガナ", "typeofcustomer": "区分",
-        "individual_nationality": "個人_国籍", "individual_birthDate": "個人_生年月日", "individual_age": "個人_年齢", "individual_gender": "個人_性別",
+        "individual_nationality": "個人_国籍", "individual_birthdate": "個人_生年月日", "individual_age": "個人_年齢", "individual_gender": "個人_性別",
         "individual_postalcode": "個人_郵便番号", "individual_prefecture": "個人_都道府県", "individual_city": "個人_市区町村", "individual_address": "個人_番地", "individual_currentaddresscategory": "個人_現住所区分",
         "individual_tel1": "個人_TEL1", "individual_tel2": "個人_TEL2", "individual_mail": "個人_Mail", "individual_workplace": "個人_勤務先",
         "individual_workplace_postalcode": "個人_勤務先_郵便番号", "individual_workplace_prefecture": "個人_勤務先_都道府県",
@@ -169,43 +169,72 @@ def show_customerlist():
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/new", methods=["GET", "POST"])
 def customer_new():
+    """新規顧客の登録（承認なし）"""
     conn = get_db_connection()
     try:
+        button_config = {"show_instant_register": True}
+        
         if request.method == "POST":
-            action = request.form.get("action")
             form_data = {f: request.form.get(f, "").strip() for f in field_names}
             
-            if action == "request_new_approval":
-                if not form_data.get("name"):
-                    flash("名前を入力してください。", "error")
-                    return render_template("masters/customer_form.html", mode="create", form_data=form_data, button_config={"show_approval_register": True}, approvers=get_approvers(conn))
-                return render_template("shared/new_confirm.html", form_data=form_data, approvers=get_approvers(conn), submit_url=url_for('customerlist.customer_new'), final_action_value="submit_new_approval")
+            # --- 1. 共通の入力チェック ---
+            if not form_data.get("name"):
+                flash("名前を入力してください。", "error")
+                return render_template("masters/customer_form.html", mode="create", form_data=form_data, button_config=button_config)
 
-            elif action == "submit_new_approval":
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT MAX(CAST(SUBSTRING(customer_code, 2) AS UNSIGNED)) AS max_num FROM ms01_customerlist WHERE customer_code LIKE 'C%'")
-                    max_num = cursor.fetchone()['max_num']
-                    customer_code = f"C{(max_num or 0) + 1:07d}"
-                    form_data.update({'registration_shain': session.get('shain_name', '不明なユーザー'),'registration_date': datetime.datetime.now(),'registration_status': 2})
-                    values = [customer_code]
-                    for f in field_names:
-                        val = form_data.get(f, "")
-                        values.append(None if (f.endswith("Date") or f.endswith("age")) and val == "" else val)
-                    column_names = ", ".join(["customer_code"] + field_names)
-                    sql_insert = f"INSERT INTO ms01_customerlist ({column_names}) VALUES ({', '.join(['%s']*len(values))})"
-                    cursor.execute(sql_insert, values)
-                    
-                    approver_id = request.form.get('approver_id')
-                    requester_id = session.get('shain_code', 'UNKNOWN')
-                    sql_request = "INSERT INTO ts51_approval_requests (target_table, target_id, request_type, request_data, requester_id, approver_id, status) VALUES (%s, %s, %s, %s, %s, %s, 0)"
-                    request_data_json = json.dumps(form_data, ensure_ascii=False, default=json_serial)
-                    cursor.execute(sql_request, ('ms01_customerlist', customer_code, '新規', request_data_json, requester_id, approver_id))
-                    conn.commit()
-                flash("顧客情報の登録を申請しました。", "success")
-                return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
+            date_fields_to_check = ["individual_birthdate", "corporate_foundationdate"]
+            for field in date_fields_to_check:
+                date_str = form_data.get(field)
+                if date_str:
+                    try:
+                        datetime.datetime.strptime(date_str, '%Y%m%d')
+                    except ValueError:
+                        flash(f"入力された日付（{get_field_labels().get(field)}）が正しくありません。(例: 20250131)", "error")
+                        return render_template("masters/customer_form.html", mode="create", form_data=form_data, button_config=button_config)
+
+            # --- 2. データベース登録処理 ---
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT MAX(CAST(SUBSTRING(customer_code, 2) AS UNSIGNED)) AS max_num FROM ms01_customerlist WHERE customer_code LIKE 'C%'")
+                max_num = cursor.fetchone()['max_num']
+                customer_code = f"C{(max_num or 0) + 1:07d}"
+
+                # ▼▼▼【ここから修正】▼▼▼
+                # 郵便番号を「NNN-NNNN」形式に強制フォーマット
+                for field in ['individual_postalcode', 'individual_workplace_postalcode', 'corporate_postalcode']:
+                    code = form_data.get(field)
+                    if code:
+                        digits = code.replace('-', '')
+                        if len(digits) == 7 and digits.isdigit():
+                            form_data[field] = f"{digits[:3]}-{digits[3:]}"
+                
+                # サーバー側で値を設定
+                form_data['registration_shain'] = session.get('shain_name', '不明なユーザー')
+                form_data['registration_date'] = datetime.datetime.now()
+                form_data['registration_status'] = 1
+
+                # データベース保存用に値を準備
+                values = [customer_code]
+                datetime_fields = ["individual_birthdate", "corporate_foundationdate", "registration_date", "update_date"]
+                integer_fields = ["individual_age"]
+                for f in field_names:
+                    val = form_data.get(f, "")
+                    if (f in datetime_fields or f in integer_fields) and val == "":
+                        values.append(None)
+                    else:
+                        values.append(val)
+                # ▲▲▲【修正ここまで】▲▲▲
+                
+                column_names = ", ".join(["customer_code"] + field_names)
+                sql_insert = f"INSERT INTO ms01_customerlist ({column_names}) VALUES ({', '.join(['%s']*len(values))})"
+                cursor.execute(sql_insert, values)
+                conn.commit()
+
+            flash(f"顧客コード {customer_code} を発行し、登録しました。", "success")
+            return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
         
-        # GETリクエスト
-        return render_template("masters/customer_form.html", mode="create", form_data={f: "" for f in field_names}, button_config={"show_approval_register": True}, approvers=get_approvers(conn), approval_request=None)
+        # --- [GET] 新規登録ページを最初に表示する時の処理 ---
+        return render_template("masters/customer_form.html", mode="create", form_data={f: "" for f in field_names}, button_config=button_config)
+    
     finally:
         if conn: conn.close()
 
@@ -214,86 +243,63 @@ def customer_new():
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/<customer_code>", methods=["GET", "POST"])
 def customer_edit(customer_code):
+    """顧客の編集・更新・削除（承認なし）"""
     conn = get_db_connection()
     try:
-        # (POST処理は、この後のステップで完成させます)
+        # --- [POST] 「更新」または「削除」ボタンが押された時の処理 ---
         if request.method == "POST":
             action = request.form.get("action")
-            
-            # ###【更新申請】ボタンが押された場合 → 確認画面へ ###
-            if action == 'request_update_approval':
+
+            # ###【更新】処理 ###
+            if action == "update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
-                    before_data = cursor.fetchone()
-                changes = []
-                field_labels = get_field_labels()
-                for field in field_names:
-                    before_val = str(before_data.get(field, '') or '')
-                    after_val = str(form_data.get(field, '') or '')
-                    if field in ["registration_date", "update_date"] and before_data.get(field):
-                        before_val = before_data.get(field).strftime('%Y-%m-%dT%H:%M')
-                    if before_val != after_val:
-                        changes.append({"label": field_labels.get(field, field), "before": before_val, "after": after_val})
-                if not changes:
-                    flash("変更された項目がありません。", "info")
-                    return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
-                return render_template("shared/update_confirm.html", changes=changes, form_data=form_data, submit_url=url_for('customerlist.customer_edit', customer_code=customer_code), approvers=get_approvers(conn), is_approval_flow=True, final_action_value="submit_update_approval")
-
-            # ###【削除申請】ボタンが押された場合 → 確認画面へ ###
-            elif action == 'request_delete_approval':
-                # (この部分は後ほど削除機能全体を実装する際に完成させます)
-                flash("削除申請機能は現在実装中です。", "info")
+                    update_parts, values = [], []
+                    for f in field_names:
+                        # 更新対象のフィールドのみをリストアップ
+                        if f not in ["registration_date", "registration_shain", "update_date", "update_shain", "registration_status"]:
+                            update_parts.append(f"{f} = %s")
+                            values.append(form_data.get(f))
+                    
+                    update_parts.extend(["update_date = %s", "update_shain = %s"])
+                    values.extend([datetime.datetime.now(), session.get('shain_name', '不明なユーザー'), customer_code])
+                    
+                    sql = f"UPDATE ms01_customerlist SET {', '.join(update_parts)} WHERE customer_code = %s"
+                    cursor.execute(sql, values)
+                    conn.commit()
+                flash(f"顧客コード（{customer_code}）の情報を更新しました。", "success")
                 return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
-
-        # [GET] ページを最初に表示する時の処理
+            
+            # ###【削除】処理 ###
+            elif action == "delete_instant":
+                # (この後のステップで、削除確認画面のロジックをここに追加します)
+                pass
+        
+        # --- [GET] 編集ページを最初に表示する時の処理 ---
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
             customer = cursor.fetchone()
+        
         if not customer:
             flash("指定された顧客が見つかりませんでした。", "error")
             return redirect(url_for("customerlist.show_customerlist"))
         
-        approval_request, button_config = None, {}
-        customer_status = customer.get('registration_status')
-
-        if customer_status == 2: # 承認待ち
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT * FROM ts51_approval_requests WHERE target_id = %s AND status = 0 ORDER BY created_at DESC LIMIT 1", (customer_code,))
-                approval_request = cursor.fetchone()
-            if approval_request:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT shain_name FROM ms_shainlist WHERE shain_code = %s", (approval_request.get('requester_id'),))
-                    approval_request['requester_name'] = (res := cursor.fetchone()) and res.get('shain_name') or ''
-                    cursor.execute("SELECT shain_name FROM ms_shainlist WHERE shain_code = %s", (approval_request.get('approver_id'),))
-                    approval_request['approver_name'] = (res := cursor.fetchone()) and res.get('shain_name') or ''
-                if approval_request.get('request_type') == '更新':
-                    changes = []
-                    field_labels = get_field_labels()
-                    before_data, after_data = customer, json.loads(approval_request['request_data'])
-                    for field in field_names:
-                        before_val, after_val = str(before_data.get(field, '') or ''), str(after_data.get(field, '') or '')
-                        if field in ["registration_date", "update_date"] and before_data.get(field):
-                            before_val = before_data.get(field).strftime('%Y-%m-%dT%H:%M')
-                        if before_val != after_val:
-                            changes.append({"label": field_labels.get(field, field), "before": before_val, "after": after_val})
-                    approval_request['changes'] = changes
-                
-                current_user_shain_code, current_user_role = session.get('shain_code'), session.get('role')
-                if current_user_shain_code == approval_request['requester_id']:
-                    button_config = {"show_withdraw": True, "show_close": True}
-                elif current_user_role in [1, 2, 3, 4, 5]:
-                    button_config = {"show_approve": True, "show_reject": True, "show_close": True}
-                else: button_config = {"show_close": True}
-            else: button_config = {"show_close": True}
-        else: # 登録済(1), 差戻し(3)など
-            button_config = {"show_approval_update": True, "show_approval_delete": True, "show_close": True}
-            if customer_status == 3:
-                with conn.cursor() as cursor:
-                    cursor.execute("SELECT * FROM ts51_approval_requests WHERE target_id = %s AND status = 2 ORDER BY created_at DESC LIMIT 1", (customer_code,))
-                    approval_request = cursor.fetchone()
+        # --- 表示するボタンを決定 ---
+        button_config = {}
+        user_role = session.get('role', 0)
+        # グループA, B (社員A) の場合
+        if user_role in [1, 3]:
+            button_config = {"show_instant_update": True, "show_instant_delete": True}
+        # グループB (社員B) の場合
+        elif user_role == 4:
+            button_config = {"show_instant_update": True, "show_instant_delete": False} # 削除は不可
         
-        return render_template("masters/customer_form.html", mode="edit", form_data=customer, button_config=button_config, approval_request=approval_request, approvers=get_approvers(conn))
+        return render_template(
+            "masters/customer_form.html", 
+            mode="edit", 
+            form_data=customer,
+            button_config=button_config
+        )
     finally:
         if conn: conn.close()
         

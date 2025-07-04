@@ -60,9 +60,9 @@
   </div>
 
   <div class="row">
-    <label for="individual_birthDate" class="col-sm-2 col-form-label">生年月日</label>
+    <label for="individual_birthdate" class="col-sm-2 col-form-label">生年月日</label>
     <div class="col-sm-10" style="display: flex; align-items: center; gap: 16px;">
-      <input type="text" name="individual_birthDate" id="individual_birthDate" class="form-control" style="max-width: 10em;" maxlength="8" pattern="\d{8}" placeholder="例: 20250101" value="{{ form_data.individual_birthDate or '' }}">
+      <input type="text" name="individual_birthdate" id="individual_birthdate" class="form-control" style="max-width: 10em;" maxlength="8" pattern="\d{8}" placeholder="例: 20250101" value="{{ form_data.individual_birthdate or '' }}">
       <span id="seireki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
       <span id="wareki_birthdate" style="color: #000000; font-size: 0.95em; min-width: 110px; display: inline-block;"></span>
       <span id="age_display" style="color: #d60000; font-size: 1em; min-width: 60px; display: inline-block;"></span>

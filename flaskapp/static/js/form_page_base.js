@@ -25,19 +25,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // 年齢自動計算
-    const birthDateInput = document.getElementById('individual_birthDate');
+    const birthdateInput = document.getElementById('individual_birthdate');
     const ageInput = document.getElementById('individual_age');
-    if (birthDateInput && ageInput) {
-        birthDateInput.addEventListener('change', () => {
-            let v = birthDateInput.value.replace(/[^\d]/g, '');
+    if (birthdateInput && ageInput) {
+        birthdateInput.addEventListener('change', () => {
+            let v = birthdateInput.value.replace(/[^\d]/g, '');
             if (v.length === 8) {
-                const birthDate = new Date(
+                const birthdate = new Date(
                     v.substr(0, 4) + '-' + v.substr(4, 2) + '-' + v.substr(6, 2)
                 );
                 const today = new Date();
-                let age = today.getFullYear() - birthDate.getFullYear();
-                const monthDiff = today.getMonth() - birthDate.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                let age = today.getFullYear() - birthdate.getFullYear();
+                const monthDiff = today.getMonth() - birthdate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
                     age--;
                 }
                 ageInput.value = age >= 0 ? age : '';
@@ -78,27 +78,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 和暦表示（生年月日）
     const warekiSpan = document.getElementById('wareki_birthdate');
-    if (birthDateInput && warekiSpan) {
+    if (birthdateInput && warekiSpan) {
         function updateWareki() {
-            let v = birthDateInput.value.replace(/[^\d]/g, '');
+            let v = birthdateInput.value.replace(/[^\d]/g, '');
             if (v.length === 8) {
                 warekiSpan.textContent = toWareki(v);
-            } else if (/^\d{4}\/\d{2}\/\d{2}$/.test(birthDateInput.value)) {
-                warekiSpan.textContent = toWareki(birthDateInput.value);
+            } else if (/^\d{4}\/\d{2}\/\d{2}$/.test(birthdateInput.value)) {
+                warekiSpan.textContent = toWareki(birthdateInput.value);
             } else {
                 warekiSpan.textContent = "";
             }
         }
-        birthDateInput.addEventListener('input', updateWareki);
-        birthDateInput.addEventListener('blur', updateWareki);
+        birthdateInput.addEventListener('input', updateWareki);
+        birthdateInput.addEventListener('blur', updateWareki);
         updateWareki();
     }
 
     // 生年月日8桁入力時に西暦・和暦を表示（西暦は「2025年04月11日」形式）
     const seirekiSpan = document.getElementById('seireki_birthdate');
-    if (birthDateInput && seirekiSpan && warekiSpan) {
-        function updateBirthDateDisplay() {
-            let v = birthDateInput.value.replace(/[^\d]/g, '');
+    if (birthdateInput && seirekiSpan && warekiSpan) {
+        function updatebirthdateDisplay() {
+            let v = birthdateInput.value.replace(/[^\d]/g, '');
             if (v.length === 8) {
                 // 西暦表示（YYYY年MM月DD日）
                 seirekiSpan.textContent = `${v.substr(0,4)}年${v.substr(4,2)}月${v.substr(6,2)}日`;
@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 warekiSpan.textContent = "";
             }
         }
-        birthDateInput.addEventListener('input', updateBirthDateDisplay);
-        birthDateInput.addEventListener('blur', updateBirthDateDisplay);
-        updateBirthDateDisplay();
+        birthdateInput.addEventListener('input', updatebirthdateDisplay);
+        birthdateInput.addEventListener('blur', updatebirthdateDisplay);
+        updatebirthdateDisplay();
     }
 
     // フォームバリデーション
@@ -180,7 +180,7 @@ postalFields.forEach(field => {
     
 
     const ageSpan = document.getElementById('age_display');
-    if (birthDateInput && seirekiSpan && warekiSpan && ageSpan) {
+    if (birthdateInput && seirekiSpan && warekiSpan && ageSpan) {
         function toWareki(ymd) {
             let y, m, d;
             if (/^\d{8}$/.test(ymd)) {
@@ -225,8 +225,8 @@ postalFields.forEach(field => {
             }
             return age >= 0 ? `${age}歳` : "";
         }
-        function updateBirthDateDisplay() {
-            let v = birthDateInput.value.replace(/[^\d]/g, '');
+        function updatebirthdateDisplay() {
+            let v = birthdateInput.value.replace(/[^\d]/g, '');
             if (v.length === 8) {
                 seirekiSpan.textContent = `${v.substr(0,4)}年${v.substr(4,2)}月${v.substr(6,2)}日`;
                 warekiSpan.textContent = toWareki(v);
@@ -237,9 +237,9 @@ postalFields.forEach(field => {
                 ageSpan.textContent = "";
             }
         }
-        birthDateInput.addEventListener('input', updateBirthDateDisplay);
-        birthDateInput.addEventListener('blur', updateBirthDateDisplay);
-        updateBirthDateDisplay();
+        birthdateInput.addEventListener('input', updatebirthdateDisplay);
+        birthdateInput.addEventListener('blur', updatebirthdateDisplay);
+        updatebirthdateDisplay();
     }
 
     // === 設立年月日（法人）の和暦・西暦表示 ===

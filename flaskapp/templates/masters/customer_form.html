@@ -1,15 +1,15 @@
 {% extends "form_page_base.html" %}
-{% set page_title = mode == "edit" and "顧客詳細" or "新規 顧客登録" %}
+{% set page_title = "顧客" + ("詳細" if mode == "edit" else "新規登録") %}
 
-{# 作成した部品ファイルをインポート #}
-{% from "shared/_form_components.html" import render_approval_messages, render_approval_buttons with context %}
+{# 承認なし用のシンプルなボタン部品をインポート #}
+{% from "shared/_form_components.html" import render_simple_flow_buttons with context %}
 
 {# ============================================================================== #}
 {# ▼▼▼ 上部ボタン ▼▼▼ #}
 {# ============================================================================== #}
 {% block left_buttons %}
-  {# ボタン部品を呼び出す #}
-  {{ render_approval_buttons(mode, form_data, button_config, approval_request, approvers) }}
+  {# シンプル版のボタン部品を呼び出す #}
+  {{ render_simple_flow_buttons(mode, form_data, button_config) }}
 {% endblock %}
 
 
@@ -19,9 +19,6 @@
 {% block main_content %}
   {# --- フォーム全体を一つのformタグで囲む --- #}
   <form method="POST" id="main-form">
-
-    {# メッセージ表示用の部品を呼び出す #}
-    {{ render_approval_messages(approval_request) }}
 
     {# フォームの入力欄部品を読み込む #}
     <div class="form-wrapper">
