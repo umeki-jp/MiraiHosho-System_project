@@ -45,12 +45,8 @@ def login():
                     session.clear()
                     session['user_id'] = user['user_id']
                     session['account_id'] = user['account_id']
-                    session['role'] = user['role']
-                    
-                    # ▼▼▼【ここを修正】▼▼▼
-                    session['shain_code'] = user['shain_code'] # 辞書のキーも小文字に
-                    # ▲▲▲【修正ここまで】▲▲▲
-                    
+                    session['role'] = int(user['role'])
+                    session['shain_code'] = user['shain_code']
                     session['shain_name'] = user['shain_name']
                     
                     return redirect(url_for("main.main_page"))

@@ -243,7 +243,7 @@ postalFields.forEach(field => {
     }
 
     // === 設立年月日（法人）の和暦・西暦表示 ===
-    const foundationDateInput = document.getElementById('corporate_foundationdate');
+    const foundationdateInput = document.getElementById('corporate_foundationdate');
     const seirekiFoundationSpan = document.getElementById('seireki_foundationdate');
     const warekiFoundationSpan = document.getElementById('wareki_foundationdate');
 
@@ -277,9 +277,9 @@ postalFields.forEach(field => {
         return "";
     }
 
-    if (foundationDateInput && seirekiFoundationSpan && warekiFoundationSpan) {
-        function updateFoundationDateDisplay() {
-            let v = foundationDateInput.value.replace(/[^\d]/g, '');
+    if (foundationdateInput && seirekiFoundationSpan && warekiFoundationSpan) {
+        function updateFoundationdateDisplay() {
+            let v = foundationdateInput.value.replace(/[^\d]/g, '');
             if (v.length === 8) {
                 seirekiFoundationSpan.textContent = `${v.substr(0,4)}年${v.substr(4,2)}月${v.substr(6,2)}日`;
                 warekiFoundationSpan.textContent = toWareki(v);
@@ -288,9 +288,9 @@ postalFields.forEach(field => {
                 warekiFoundationSpan.textContent = "";
             }
         }
-        foundationDateInput.addEventListener('input', updateFoundationDateDisplay);
-        foundationDateInput.addEventListener('blur', updateFoundationDateDisplay);
-        updateFoundationDateDisplay();
+        foundationdateInput.addEventListener('input', updateFoundationdateDisplay);
+        foundationdateInput.addEventListener('blur', updateFoundationdateDisplay);
+        updateFoundationdateDisplay();
     }
 });
 

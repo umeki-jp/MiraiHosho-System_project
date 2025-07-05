@@ -2,7 +2,7 @@
 
 field_names = [
     "name", "name_kana", "typeofcustomer", "individual_nationality",
-    "individual_birthDate", "individual_age", "individual_gender",
+    "individual_birthdate", "individual_age", "individual_gender",
     "individual_postalcode", "individual_prefecture", "individual_city",
     "individual_address", "individual_currentaddresscategory",
     "individual_tel1", "individual_tel2", "individual_mail",
@@ -16,5 +16,5 @@ field_names = [
     "corporate_tel1", "corporate_tel2", "corporate_mail",
     "corporate_businesscontent", "customer_rank", "customer_rankdetails",
     "customer_remarks", "registration_date", "registration_shain",
-    "update_date", "update_shain"
+    "update_date", "update_shain","registration_status","assignor_code","assignee_code"
 ]

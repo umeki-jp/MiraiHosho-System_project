@@ -57,15 +57,17 @@
         {{ ui.search_input("勤務先", "workplace", filters.workplace or "") }}
       </div>
       <div class="col-md-4">
-        <label for="registration_status" class="form-label">登録状況</label>
-  <select name="registration_status" id="registration_status" class="form-select form-select-sm">
-    <option value="">すべて</option>
-    {% for key, value in registration_status.items() %}
-      <option value="{{ key }}" {% if filters.registration_status == key|string %}selected{% endif %}>
-        {{ value }}
-      </option>
-    {% endfor %}
-  </select>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">登録状況</span>
+          <select name="registration_status" id="registration_status" class="form-select">
+            <option value="">すべて</option>
+            {% for key, value in registration_status.items() %}
+              <option value="{{ key }}" {% if filters.registration_status == key|string %}selected{% endif %}>
+                {{ value }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
       <div class="col-md-6">
         {# 日付範囲の入力欄はBootstrapのインプットグループを使うと綺麗にまとまる #}
@@ -109,7 +111,7 @@
               <td class="col-customer">{{ c.name_kana or '' }}</td>
               <td class="col-date">{{ c.individual_birthdate.strftime('%Y-%m-%d') if c.individual_birthdate else '' }}</td>
               <td class="col-type">{{ c.typeofcustomer or '' }}</td>
-              <td class="col-rank">{{ c.customer_rank or '' }}</td>
+              <td class="col-rank">{{ customer_rank_map.get(c.customer_rank, '未設定') }}</td>
               <td class="col-date">{{ c.registration_date.strftime('%Y-%m-%d') if c.registration_date else '' }}</td>
             </tr>
           {% endfor %}

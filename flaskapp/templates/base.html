@@ -446,6 +446,12 @@
   /* ▼▼▼ テーブルの文字サイズに合わせる ▼▼▼ */
   font-size: inherit;
 }
+
+/* プレースホルダーのテキストをグレーにする */
+.form-control::placeholder {
+  color: #999; /* お好みのグレー色を指定 */
+  opacity: 1; /* Firefoxでの表示を他のブラウザと合わせるため */
+}
 /* ▲▲▲ ここまで追加 ▲▲▲ */
 
 .content form .input-group-text {

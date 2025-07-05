@@ -318,7 +318,15 @@
   <div class="row">
     <label for="customer_rank" class="col-sm-2 col-form-label">顧客ランク</label>
     <div class="col-sm-10" style="display: flex; gap: 8px; align-items: center;">
-      <input type="text" id="customer_rank" class="form-control" name="customer_rank" style="max-width: 10em;" value="{{ form_data.customer_rank or '' }}" maxlength="10">
+      {# プルダウンメニューに変更 #}
+      <select name="customer_rank" id="customer_rank" class="form-select" style="max-width: 10em;">
+        <option value="">～選択～</option>
+        {% for rank in customer_rank_list %}
+          <option value="{{ rank.value }}" {% if form_data.customer_rank == rank.value %}selected{% endif %}>
+            {{ rank.label }}
+          </option>
+        {% endfor %}
+      </select>
       <input type="text" id="customer_rankdetails" class="form-control" name="customer_rankdetails" value="{{ form_data.customer_rankdetails or '' }}" placeholder="ランク詳細">
     </div>
   </div>
