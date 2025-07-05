@@ -72,31 +72,41 @@ def show_customerlist():
     # ページネーションの設定
     page_str = request.args.get("page", "1")
     page = int(page_str) if page_str.isdigit() else 1
-    
     limit_str = request.args.get("limit", "20")
     limit = int(limit_str) if limit_str.isdigit() else 20
-
     offset = (page - 1) * limit
+
+    # ▼▼▼【修正点1】最大検索件数の取得方法をシンプルに ▼▼▼
+    try:
+        # デフォルト値を100として直接指定
+        max_results = int(request.args.get("max_results", "100"))
+    except (ValueError, TypeError):
+        max_results = 100 # 不正な値の場合のフォールバック
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     # データベース接続
     conn = get_db_connection()
 
-    # ★★★ 接続失敗時のチェック ★★★
+    # 接続失敗時のチェック
     if not conn:
         flash("データベースに接続できませんでした。管理者にお問い合わせください。", "danger")
+        # ▼▼▼【修正点2】不要な引数を削除 ▼▼▼
         return render_template(
             "masters/customerlist.html", customers=[], total=0, page=1, limit=limit, 
             total_pages=0, filters=filters, has_search=has_search, 
-            selected_limit=str(limit), registration_status=constants.registration_status_MAP
+            selected_limit=str(limit), 
+            registration_status=constants.registration_status_MAP,
+            customer_rank_map=constants.CUSTOMER_RANK_MAP,
+            selected_max_results=str(max_results)
         )
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     results = []
     total = 0
     try:
-        # 検索条件の組み立て
+        # 検索条件の組み立て (この部分は変更なし)
         where_clauses = ["1=1"]
         params = {}
-
         if filters["customer_code"]:
             where_clauses.append("customer_code LIKE %(customer_code)s")
             params['customer_code'] = f"%{filters['customer_code']}%"
@@ -121,24 +131,29 @@ def show_customerlist():
         if filters["registration_date_to"]:
             where_clauses.append("registration_date <= %(registration_date_to)s")
             params['registration_date_to'] = filters['registration_date_to']
-
         where_sql = " AND ".join(where_clauses)
 
-        # データベース操作
+        # データベース操作 (この部分は変更なし)
         with conn.cursor() as cursor:
-            # 総件数を取得
-            count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql}"
-            cursor.execute(count_sql, params)
-            total = cursor.fetchone()['total'] or 0
-            
-            # 表示するデータを取得
-            params_with_limit = params.copy()
-            params_with_limit['limit'] = limit
-            params_with_limit['offset'] = offset
-            
-            sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} ORDER BY customer_code DESC LIMIT %(limit)s OFFSET %(offset)s"
-            cursor.execute(sql, params_with_limit)
-            results = cursor.fetchall()
+            params_for_count = params.copy()
+            params_for_count['max_limit'] = max_results + 1
+            count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql} LIMIT %(max_limit)s"
+            cursor.execute(count_sql, params_for_count)
+            count_result = cursor.fetchone()['total'] or 0
+
+            if count_result > max_results:
+                total = max_results
+                flash(f"検索結果が{max_results}件を超えました。最初の{max_results}件を表示します。条件を絞り込んでください。", "warning")
+            else:
+                total = count_result
+
+            if total > 0:
+                params_with_limit = params.copy()
+                params_with_limit['limit'] = limit
+                params_with_limit['offset'] = offset
+                sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} ORDER BY customer_code DESC LIMIT %(limit)s OFFSET %(offset)s"
+                cursor.execute(sql, params_with_limit)
+                results = cursor.fetchall()
 
     except Exception as e:
         flash(f"データの取得中にエラーが発生しました: {e}", "danger")
@@ -151,6 +166,7 @@ def show_customerlist():
     # テンプレートに渡す値を計算
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
+    # ▼▼▼【修正点2】不要な引数を削除 ▼▼▼
     return render_template(
         "masters/customerlist.html",
         customers=results, 
@@ -162,9 +178,10 @@ def show_customerlist():
         has_search=has_search, 
         selected_limit=str(limit),
         registration_status=constants.registration_status_MAP,
-        customer_rank_map=constants.CUSTOMER_RANK_MAP
+        customer_rank_map=constants.CUSTOMER_RANK_MAP,
+        selected_max_results=str(max_results)
     )
-
+    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 # ==============================================================================
 # 新規顧客の登録・登録申請機能
 # ==============================================================================

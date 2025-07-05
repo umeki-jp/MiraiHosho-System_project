@@ -61,6 +61,17 @@
 
   <div class="col-md-5 d-flex justify-content-end">
     <div class="input-group input-group-sm" style="width: auto;">
+      <label class="input-group-text" for="max-results-select">最大件数</label>
+      <select name="max_results" id="max-results-select" class="form-select form-select-sm">
+        
+        {# ▼▼▼【この行を修正】▼▼▼ #}
+        {% for num in [100, 1000, 5000] %}
+        
+        <option value="{{ num }}" {% if selected_max_results == num|string %}selected{% endif %}>{{ num }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="input-group input-group-sm" style="width: auto;">
       <label class="input-group-text" for="limit-select">表示件数</label>
       <select name="limit" id="limit-select" class="form-select form-select-sm">
         {% for num in [20, 50, 100] %}
