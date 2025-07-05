@@ -52,7 +52,6 @@ def get_field_labels():
 # ==============================================================================
 # 顧客情報の一覧表示・検索機能
 # ==============================================================================
-# customerlist.py の中の関数をこれに置き換え
 
 @customerlist_bp.route("/masters/customerlist")
 def show_customerlist():
@@ -76,21 +75,31 @@ def show_customerlist():
     limit = int(limit_str) if limit_str.isdigit() else 20
     offset = (page - 1) * limit
 
-    # ▼▼▼【修正点1】最大検索件数の取得方法をシンプルに ▼▼▼
     try:
-        # デフォルト値を100として直接指定
         max_results = int(request.args.get("max_results", "100"))
     except (ValueError, TypeError):
-        max_results = 100 # 不正な値の場合のフォールバック
-    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        max_results = 100
+
+    # ▼▼▼【1. ソート情報を受け取る】▼▼▼
+    sort_by = request.args.get("sort_by")
+    sort_order = request.args.get("sort_order")
+
+    # ▼▼▼【2. 安全なORDER BY句を組み立てる】▼▼▼
+    # SQLインジェクションを防ぐため、ソート可能な列をホワイトリストで定義
+    allowed_sort_columns = ['customer_code', 'name', 'name_kana', 'individual_birthdate', 'typeofcustomer', 'customer_rank', 'registration_date']
+    
+    # デフォルトのソート順
+    order_by_sql = "ORDER BY customer_code DESC" 
+    
+    if sort_by in allowed_sort_columns and sort_order in ['asc', 'desc']:
+        order_by_sql = f"ORDER BY {sort_by} {sort_order.upper()}"
 
     # データベース接続
     conn = get_db_connection()
 
-    # 接続失敗時のチェック
     if not conn:
+        # ... 接続失敗時の処理 (変更なし) ...
         flash("データベースに接続できませんでした。管理者にお問い合わせください。", "danger")
-        # ▼▼▼【修正点2】不要な引数を削除 ▼▼▼
         return render_template(
             "masters/customerlist.html", customers=[], total=0, page=1, limit=limit, 
             total_pages=0, filters=filters, has_search=has_search, 
@@ -99,12 +108,11 @@ def show_customerlist():
             customer_rank_map=constants.CUSTOMER_RANK_MAP,
             selected_max_results=str(max_results)
         )
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     results = []
     total = 0
     try:
-        # 検索条件の組み立て (この部分は変更なし)
+        # 検索条件の組み立て (変更なし)
         where_clauses = ["1=1"]
         params = {}
         if filters["customer_code"]:
@@ -132,9 +140,9 @@ def show_customerlist():
             where_clauses.append("registration_date <= %(registration_date_to)s")
             params['registration_date_to'] = filters['registration_date_to']
         where_sql = " AND ".join(where_clauses)
-
-        # データベース操作 (この部分は変更なし)
+        
         with conn.cursor() as cursor:
+            # 総件数を取得 (変更なし)
             params_for_count = params.copy()
             params_for_count['max_limit'] = max_results + 1
             count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql} LIMIT %(max_limit)s"
@@ -151,10 +159,13 @@ def show_customerlist():
                 params_with_limit = params.copy()
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
-                sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} ORDER BY customer_code DESC LIMIT %(limit)s OFFSET %(offset)s"
+                
+                # ▼▼▼【3. SQLにORDER BY句を適用】▼▼▼
+                sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
+                # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                
                 cursor.execute(sql, params_with_limit)
                 results = cursor.fetchall()
-
     except Exception as e:
         flash(f"データの取得中にエラーが発生しました: {e}", "danger")
         total = 0
@@ -163,10 +174,8 @@ def show_customerlist():
         if conn:
             conn.close()
             
-    # テンプレートに渡す値を計算
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
-    # ▼▼▼【修正点2】不要な引数を削除 ▼▼▼
     return render_template(
         "masters/customerlist.html",
         customers=results, 
@@ -179,9 +188,12 @@ def show_customerlist():
         selected_limit=str(limit),
         registration_status=constants.registration_status_MAP,
         customer_rank_map=constants.CUSTOMER_RANK_MAP,
-        selected_max_results=str(max_results)
+        selected_max_results=str(max_results),
+        # ▼▼▼【4. ソート状態をテンプレートに渡す】▼▼▼
+        sort_by=sort_by,
+        sort_order=sort_order
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     )
-    # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 # ==============================================================================
 # 新規顧客の登録・登録申請機能
 # ==============================================================================
@@ -267,9 +279,6 @@ def customer_new():
         if conn: conn.close()
 
 # ==============================================================================
-# 既存顧客の編集・更新・削除・承認申請機能
-# ==============================================================================
-# ==============================================================================
 # 既存顧客の編集・更新・削除機能
 # ==============================================================================
 @customerlist_bp.route("/masters/customer/<customer_code>", methods=["GET", "POST"])
@@ -281,6 +290,23 @@ def customer_edit(customer_code):
             "show_instant_update": True, "show_approval_update": False,
             "show_instant_delete": True, "show_approval_delete": False
         }
+        # ユーザーのロールを取得
+        user_role = session.get('role', 0)
+
+        # デフォルトでは全ての操作ボタンを非表示（閲覧のみ）
+        button_config = {
+            "show_instant_update": False,
+            "show_instant_delete": False,
+            "show_approval_update": False,
+            "show_approval_delete": False
+        }
+
+        # ロールに基づいてボタンの表示を決定
+        if user_role in [1, 3]:  # 1:システム管理者, 3:社員A
+            button_config["show_instant_update"] = True
+            button_config["show_instant_delete"] = True
+        elif user_role == 4:  # 4:社員B
+            button_config["show_instant_update"] = True
 
         if request.method == "POST":
             action = request.form.get("action")
@@ -360,6 +386,7 @@ def customer_edit(customer_code):
                             "after": after_str
                         })
 
+                # --- 変更がない場合の処理 ---
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
@@ -379,6 +406,7 @@ def customer_edit(customer_code):
                 # 1. 更新日時と更新者をサーバー側で設定
                 form_data['update_date'] = datetime.datetime.now()
                 form_data['update_shain'] = session.get('shain_name', '不明なユーザー')
+                form_data['registration_status'] = 1
 
                 # 2. フォームから送られてくる各種日付文字列をDB保存形式に変換
                 # 生年月日など (YYYYMMDD -> YYYY-MM-DD)
