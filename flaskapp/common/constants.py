@@ -97,7 +97,7 @@ CUSTOMER_RANK_LIST = [
     {'value': 4, 'label': 'ブラック'}
 ]
 
-# --- 行動履歴用定数 ---
+# --- 対応履歴用定数 ---
 
 # 対象タイプ (何に対するログか)
 TARGET_TYPE_MAP = {

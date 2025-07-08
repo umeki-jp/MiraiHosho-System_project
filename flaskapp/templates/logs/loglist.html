@@ -1,7 +1,7 @@
 {# flaskapp/templates/logs/loglist.html #}
 
 {% extends "base.html" %}
-{% set page_title = "行動履歴一覧" %}
+{% set page_title = "対応履歴一覧" %}
 
 {% block content %}
 <div class="container-fluid">
@@ -20,7 +20,7 @@
                 {% endfor %}
             </ul>
         <div class="card-header">
-            <h3>{{ target_type_map.get(current_target_type, '不明') }} の行動履歴</h3>
+            <h3>{{ target_type_map.get(current_target_type, '不明') }} の対応履歴</h3>
         </div>
         <div class="card-body">
             <table class="table table-sm table-bordered table-hover">

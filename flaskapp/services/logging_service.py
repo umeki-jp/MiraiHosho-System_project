@@ -6,7 +6,7 @@ from flaskapp.utils.db import get_db_connection
 
 def log_action(target_type, target_id, action_source, action_type, action_details=None):
     """
-    行動履歴をデータベースに記録する共通関数
+    対応履歴をデータベースに記録する共通関数
     """
     # セッションから操作者情報を取得
     shain_code = session.get('shain_code', 'UNKNOWN')
