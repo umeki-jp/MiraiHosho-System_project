@@ -22,6 +22,8 @@
       <input type="hidden" name="{{ key }}" value="{{ value or '' }}">
     {% endfor %}
 
+    <input type="hidden" name="changes_json" value='{{ changes | tojson }}'>
+
     {# 承認フローの場合のみ、承認者ドロップダウンを表示 #}
     {% if is_approval_flow %}
     <div class="row justify-content-center my-4">

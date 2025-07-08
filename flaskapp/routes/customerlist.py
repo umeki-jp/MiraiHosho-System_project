@@ -4,6 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flaskapp.utils.db import get_db_connection
 from flaskapp.utils.ms01_customerlist_fields import field_names 
 from flaskapp.common import constants
+from flaskapp.services.logging_service import log_action
 
 customerlist_bp = Blueprint("customerlist", __name__)
 
@@ -259,6 +260,15 @@ def customer_new():
                 cursor.execute(sql_insert, values)
                 conn.commit()
 
+                # ▼▼▼ ログ記録処理を追加 ▼▼▼
+                log_action(
+                    target_type=3,  # 3: 顧客マスタ
+                    target_id=customer_code,
+                    action_source=2, # 2: ユーザー操作
+                    action_type=1,  # 1: 登録
+                    action_details={'message': f'顧客 {customer_code} が新規登録されました。'}
+                )
+
             flash(f"顧客コード {customer_code} を発行し、登録しました。", "success")
             return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
         
@@ -376,7 +386,6 @@ def customer_edit(customer_code):
                                 after_str = after_val.replace('T', ' ')
                             else:
                                 after_str = after_val
-                    # ▲▲▲【ここまで修正】▲▲▲
 
                     # --- 比較 ---
                     if before_str != after_str:
@@ -390,7 +399,7 @@ def customer_edit(customer_code):
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
-
+                
                 # 更新確認画面（承認ルートなし）を表示
                 return render_template(
                     "shared/update_confirm.html",
@@ -443,6 +452,16 @@ def customer_edit(customer_code):
                     sql = f"UPDATE ms01_customerlist SET {update_clause} WHERE customer_code = %s"
                     cursor.execute(sql, values)
                     conn.commit()
+
+                    # ▼▼▼ ログ記録処理を追加 ▼▼▼
+                    log_action(
+                        target_type=3,  # 3: 顧客マスタ
+                        target_id=customer_code,
+                        action_source=2, # 2: ユーザー操作
+                        action_type=2,  # 2: 更新
+                        action_details=json.loads(request.form.get('changes_json', '[]')) # 確認画面から変更内容を受け取る
+                    )
+                    
                 return render_template("shared/action_done.html", action_label="更新")
 
             # --- 即時削除の確認画面表示 ---
@@ -506,8 +525,25 @@ def customer_delete_confirmed(customer_code):
         if action == "submit_delete_instant":
             with conn.cursor() as cursor:
                 # 関連データがある場合は削除できない、というチェックは確認画面側で実施済み
+                cursor.execute("SELECT * FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
+                deleted_customer_data = cursor.fetchone()
                 cursor.execute("DELETE FROM ms01_customerlist WHERE customer_code = %s", (customer_code,))
                 conn.commit()
+
+                # ▼▼▼ ログ記録処理を追加 ▼▼▼
+                if deleted_customer_data:
+                    # 日付オブジェクトはJSONにできないため、文字列に変換
+                    for key, value in deleted_customer_data.items():
+                        if isinstance(value, (datetime.date, datetime.datetime)):
+                            deleted_customer_data[key] = value.isoformat()
+
+                    log_action(
+                        target_type=3,  # 3: 顧客マスタ
+                        target_id=customer_code,
+                        action_source=2, # 2: ユーザー操作
+                        action_type=3,  # 3: 削除
+                        action_details={'deleted_data': deleted_customer_data}
+                    )
             # 完了画面を表示
             return render_template("shared/action_done.html", action_label="削除")
 

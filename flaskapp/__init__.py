@@ -1,10 +1,11 @@
-from flask import Flask, session # ★★★ 変更点 1: sessionをインポート ★★★
+from flask import Flask, session 
 from flaskapp.routes.main import main_bp
 from flaskapp.routes.auth import auth_bp
 from flaskapp.routes.applications import applications_bp
 from flaskapp.routes.root import root_bp
 from flaskapp.routes.customerlist import customerlist_bp
 from flaskapp.routes.api import api_bp
+from flaskapp.routes.logs import logs_bp
 from .common import constants
 
 
@@ -17,6 +18,7 @@ def create_app():
     app.register_blueprint(root_bp)
     app.register_blueprint(customerlist_bp)
     app.register_blueprint(api_bp)
+    app.register_blueprint(logs_bp)
 
     @app.context_processor
     def inject_status_maps():
