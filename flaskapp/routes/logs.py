@@ -1,6 +1,7 @@
 # flaskapp/routes/logs.py
 
 import json
+import datetime  # 追加
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
 from flaskapp.utils.db import get_db_connection
 from flaskapp.common import constants

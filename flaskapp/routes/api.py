@@ -3,6 +3,7 @@
 from flask import Blueprint, jsonify, request
 import pymysql  # ### 変更点 1: エラー処理のためにインポート
 from flaskapp.utils.db import get_db_connection # ### 変更点 2: 共通関数をインポート
+from flaskapp.common.constants import TARGET_NAME_MAPPING  # 追加
 
 # 'api'という名前のブループリントを作成
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -77,6 +78,45 @@ def search_postal_by_address():
             return jsonify(results)
     except pymysql.MySQLError as err: # ### 変更点 5: エラーの種類を pymysql に合わせる
         return jsonify({'error': f'データベースエラー: {err}'}), 500
+    finally:
+        if conn:
+            conn.close()
+
+# 新しく追加するAPI
+@api_bp.route('/get_target_name')
+def get_target_name():
+    """対象IDから名前を取得するAPI"""
+    target_type = request.args.get('target_type', type=int)
+    target_id = request.args.get('target_id')
+    
+    if not target_type or not target_id:
+        return jsonify({'success': False, 'message': 'パラメータが不足しています'})
+    
+    if target_type not in TARGET_NAME_MAPPING:
+        return jsonify({'success': False, 'message': 'サポートされていない対象タイプです'})
+    
+    mapping = TARGET_NAME_MAPPING[target_type]
+    table_name = mapping['table']
+    id_column = mapping['id_column']
+    name_column = mapping['name_column']
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'データベースに接続できません'})
+    
+    try:
+        with conn.cursor() as cursor:
+            query = f"SELECT {name_column} FROM {table_name} WHERE {id_column} = %s"
+            cursor.execute(query, (target_id,))
+            result = cursor.fetchone()
+            
+            if result:
+                return jsonify({'success': True, 'name': result[name_column]})
+            else:
+                return jsonify({'success': False, 'message': '該当するデータが見つかりません'})
+    
+    except pymysql.MySQLError as err:
+        return jsonify({'success': False, 'message': f'データベースエラー: {err}'})
     finally:
         if conn:
             conn.close()
