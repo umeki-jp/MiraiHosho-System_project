@@ -413,3 +413,43 @@ document.addEventListener('DOMContentLoaded', function () {
         if (townKanaSpan) townKanaSpan.textContent = data.townKana || '';
     }
 });
+
+// カタカナを半角に変換する機能
+document.addEventListener('DOMContentLoaded', function () {
+  const kanaFields = ['name_kana', 'shain_kana']; // 対象フィールドのIDを配列で管理
+
+    kanaFields.forEach(fieldId => {
+        const kanaInput = document.getElementById(fieldId);
+        if (kanaInput) {
+            kanaInput.addEventListener('blur', function () {
+                const fullWidthKana = this.value;
+                const halfWidthKana = toHalfWidthKana(fullWidthKana);
+                this.value = halfWidthKana;
+            });
+        }
+    });
+
+    function toHalfWidthKana(str) {
+        return str
+            // 全角スペース → 半角スペース
+            .replace(/　/g, ' ')
+            // 全角カタカナ → 半角カタカナ
+            .replace(/[\u30A1-\u30F6]/g, function (match) {
+                const kanaMap = {
+                    '。':'｡','「':'｢','」':'｣','、':'､','・':'･','ー':'ｰ',
+                    'ァ':'ｧ','ア':'ｱ','ィ':'ｨ','イ':'ｲ','ゥ':'ｩ','ウ':'ｳ','ェ':'ｪ','エ':'ｴ','ォ':'ｫ','オ':'ｵ',
+                    'カ':'ｶ','ガ':'ｶﾞ','キ':'ｷ','ギ':'ｷﾞ','ク':'ｸ','グ':'ｸﾞ','ケ':'ｹ','ゲ':'ｹﾞ','コ':'ｺ','ゴ':'ｺﾞ',
+                    'サ':'ｻ','ザ':'ｻﾞ','シ':'ｼ','ジ':'ｼﾞ','ス':'ｽ','ズ':'ｽﾞ','セ':'ｾ','ゼ':'ｾﾞ','ソ':'ｿ','ゾ':'ｿﾞ',
+                    'タ':'ﾀ','ダ':'ﾀﾞ','チ':'ﾁ','ヂ':'ﾁﾞ','ッ':'ｯ','ツ':'ﾂ','ヅ':'ﾂﾞ','テ':'ﾃ','デ':'ﾃﾞ','ト':'ﾄ','ド':'ﾄﾞ',
+                    'ナ':'ﾅ','ニ':'ﾆ','ヌ':'ﾇ','ネ':'ﾈ','ノ':'ﾉ',
+                    'ハ':'ﾊ','バ':'ﾊﾞ','パ':'ﾊﾟ','ヒ':'ﾋ','ビ':'ﾋﾞ','ピ':'ﾋﾟ','フ':'ﾌ','ブ':'ﾌﾞ','プ':'ﾌﾟ',
+                    'ヘ':'ﾍ','ベ':'ﾍﾞ','ペ':'ﾍﾟ','ホ':'ﾎ','ボ':'ﾎﾞ','ポ':'ﾎﾟ',
+                    'マ':'ﾏ','ミ':'ﾐ','ム':'ﾑ','メ':'ﾒ','モ':'ﾓ',
+                    'ヤ':'ﾔ','ャ':'ｬ','ユ':'ﾕ','ュ':'ｭ','ヨ':'ﾖ','ョ':'ｮ',
+                    'ラ':'ﾗ','リ':'ﾘ','ル':'ﾙ','レ':'ﾚ','ロ':'ﾛ',
+                    'ワ':'ﾜ','ヲ':'ｦ','ン':'ﾝ','ヴ':'ｳﾞ'
+                };
+                return kanaMap[match] || match;
+            });
+    }
+});
