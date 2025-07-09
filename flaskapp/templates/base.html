@@ -452,8 +452,6 @@
   color: #999; /* お好みのグレー色を指定 */
   opacity: 1; /* Firefoxでの表示を他のブラウザと合わせるため */
 }
-/* ▲▲▲ ここまで追加 ▲▲▲ */
-
 .content form .input-group-text {
   min-width: 100px; /* 全角5～6文字分を想定した幅に調整 */
   justify-content: center;
@@ -478,6 +476,86 @@
   font-size: 0.875rem; /* 14px相当。お好みで調整してください */
 }
 
+/* 共通一覧テーブルスタイル */
+.list-table {
+    font-size: 0.875rem;
+    margin-bottom: 0;
+}
+
+.list-table th {
+    background-color: #e6f3ff; /* 薄い水色に変更 */
+    border-color: #dee2e6;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem; /* さらに縮小 */
+    white-space: nowrap;
+}
+
+.list-table td {
+    padding: 0.3rem 0.75rem; /* さらに縮小 */
+    vertical-align: middle;
+    border-color: #dee2e6;
+    line-height: 1.2; /* さらに行の高さを縮める */
+}
+
+.list-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.list-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: #e6f3ff; /* sticky時も薄い水色を維持 */
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* ソート関連スタイル */
+.list-table th a {
+    color: #335781; /* 濃い紺色に変更 */
+    text-decoration: underline; /* 下線を追加 */
+    font-weight: 600;
+}
+
+.list-table th a:hover {
+    color: #0d2442; /* ホバー時はさらに濃い紺色 */
+    text-decoration: underline;
+}
+
+.sort-indicator {
+    font-size: 0.8rem;
+    margin-left: 0.25rem;
+    color: #102d4e; /* ソート矢印も濃い紺色 */
+}
+
+/* 列幅調整用共通クラス */
+.col-select { width: 80px; text-align: center; }
+.col-status { width: 100px; }
+.col-code { width: 100px; }
+.col-customer { width: 150px; }
+.col-date { width: 120px; }
+.col-type { width: 80px; }
+.col-rank { width: 80px; }
+.col-actions { width: 120px; text-align: center; }
+
+/* レスポンシブテーブル用共通クラス */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.select-link {
+    color: #007bff;
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.select-link:hover {
+    background-color: #e9ecef;
+    text-decoration: none;
+}
   </style>
   {% block head_extra %}{% endblock %}
   {% block head %}{% endblock %}

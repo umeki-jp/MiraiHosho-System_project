@@ -82,74 +82,74 @@
   </form>
 
   <!-- 一覧テーブル -->
-  <div class="table-responsive">
-    <table class="table table-bordered table-sm customer-list-table">
-      <thead style="position: sticky; top: 0; z-index: 2; background: #fff;">
-        <tr>
-          {# ▼▼▼ ヘッダーをソート可能なリンクに変更 ▼▼▼ #}
-          {% set base_query_params = request.args.to_dict() %}
-          {% set _ = base_query_params.pop('sort_by', None) %}
-          {% set _ = base_query_params.pop('sort_order', None) %}
-          {% set _ = base_query_params.pop('page', None) %}
-          {% set base_query_string = base_query_params|urlencode %}
-
-          {% for th in th_list %}
-            <th class="{{ th.class }}">
-              {% if th.key %}
-                {# 現在ソート中の場合 #}
-                {% if sort_by == th.key and sort_order == 'asc' %}
-                  <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=desc">
-                    {{ th.label }} <span class="sort-indicator">▲</span>
-                  </a>
-                {% elif sort_by == th.key and sort_order == 'desc' %}
-                  <a href="?{{ base_query_string }}">
-                    {{ th.label }} <span class="sort-indicator">▼</span>
-                  </a>
-                {# ソートされていない場合 #}
-                {% else %}
-                  <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">
-                    {{ th.label }}
-                  </a>
-                {% endif %}
-              {% else %}
-                {{ th.label }}
-              {% endif %}
-            </th>
-          {% endfor %}
-          {# ▲▲▲ ヘッダー定義終了 ▲▲▲ #}
-        </tr>
-      </thead>
-      <tbody>
-        {% if customers %}
-          {% for c in customers %}
+  <div class="table-container">
+    <table class="table table-bordered list-table">
+        <thead>
             <tr>
-              <td class="col-select text-center">
-                <a href="{{ url_for('customerlist.customer_edit', customer_code=c.customer_code) }}"
-                class="select-link"
-                onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
-                選択
-              </a>
-              </td>
-              <td class="col-status">
-               {{ registration_status.get(c.registration_status, '不明') }}
-              </td>
-              <td class="col-code">{{ c.customer_code or '' }}</td>
-              <td class="col-customer">{{ c.name or '' }}</td>
-              <td class="col-customer">{{ c.name_kana or '' }}</td>
-              <td class="col-date">{{ c.individual_birthdate.strftime('%Y-%m-%d') if c.individual_birthdate else '' }}</td>
-              <td class="col-type">{{ c.typeofcustomer or '' }}</td>
-              <td class="col-rank">{{ customer_rank_map.get(c.customer_rank, '未設定') }}</td>
-              <td class="col-date">{{ c.registration_date.strftime('%Y-%m-%d') if c.registration_date else '' }}</td>
+                {# ▼▼▼ ヘッダーをソート可能なリンクに変更 ▼▼▼ #}
+                {% set base_query_params = request.args.to_dict() %}
+                {% set _ = base_query_params.pop('sort_by', None) %}
+                {% set _ = base_query_params.pop('sort_order', None) %}
+                {% set _ = base_query_params.pop('page', None) %}
+                {% set base_query_string = base_query_params|urlencode %}
+
+                {% for th in th_list %}
+                    <th class="{{ th.class }}">
+                        {% if th.key %}
+                            {# 現在ソート中の場合 #}
+                            {% if sort_by == th.key and sort_order == 'asc' %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=desc">
+                                    {{ th.label }} <span class="sort-indicator">▲</span>
+                                </a>
+                            {% elif sort_by == th.key and sort_order == 'desc' %}
+                                <a href="?{{ base_query_string }}">
+                                    {{ th.label }} <span class="sort-indicator">▼</span>
+                                </a>
+                            {# ソートされていない場合 #}
+                            {% else %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">
+                                    {{ th.label }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            {{ th.label }}
+                        {% endif %}
+                    </th>
+                {% endfor %}
+                {# ▲▲▲ ヘッダー定義終了 ▲▲▲ #}
             </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="{{ colspan }}" class="text-center text-muted">
-              該当する顧客がありません。
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
+        </thead>
+        <tbody>
+            {% if customers %}
+                {% for c in customers %}
+                    <tr>
+                        <td class="col-select">
+                            <a href="{{ url_for('customerlist.customer_edit', customer_code=c.customer_code) }}"
+                            class="select-link"
+                            onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                            選択
+                        </a>
+                        </td>
+                        <td class="col-status">
+                        {{ registration_status.get(c.registration_status, '不明') }}
+                        </td>
+                        <td class="col-code">{{ c.customer_code or '' }}</td>
+                        <td class="col-customer">{{ c.name or '' }}</td>
+                        <td class="col-customer">{{ c.name_kana or '' }}</td>
+                        <td class="col-date">{{ c.individual_birthdate.strftime('%Y-%m-%d') if c.individual_birthdate else '' }}</td>
+                        <td class="col-type">{{ c.typeofcustomer or '' }}</td>
+                        <td class="col-rank">{{ customer_rank_map.get(c.customer_rank, '未設定') }}</td>
+                        <td class="col-date">{{ c.registration_date.strftime('%Y-%m-%d') if c.registration_date else '' }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ colspan }}" class="text-center text-muted">
+                        該当する顧客がありません。
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
     </table>
   </div>
   {% endif %}

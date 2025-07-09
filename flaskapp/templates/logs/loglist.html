@@ -1,17 +1,15 @@
-{# flaskapp/templates/logs/loglist.html #}
-
 {% extends "base.html" %}
 {% set page_title = "対応履歴一覧" %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="card">
-        <ul class="nav nav-tabs card-header-tabs">
-                {# target_type_mapを使って、存在する履歴タイプのタブを動的に生成します #}
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
                 {% for type_id, type_name in target_type_map.items() %}
-                    {% if type_id != 0 %} {# "未設定"は表示しない #}
+                    {% if type_id != 0 %}
                     <li class="nav-item">
-                        <a class="nav-link {% if type_id == current_target_type %}active{% endif %}" 
+                        <a class="nav-link {% if type_id == current_target_type %}active{% endif %}"
                            href="{{ url_for('logs.show_loglist', target=type_id) }}">
                             {{ type_name }}
                         </a>
@@ -19,59 +17,130 @@
                     {% endif %}
                 {% endfor %}
             </ul>
-        <div class="card-header">
-            <h3>{{ target_type_map.get(current_target_type, '不明') }} の対応履歴</h3>
         </div>
         <div class="card-body">
-            <table class="table table-sm table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>日時</th>
-                        <th>対象ID</th>
-                        <th>操作者</th>
-                        <th>発生源</th>
-                        <th>操作</th>
-                        <th>詳細</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in logs %}
-                    <tr>
-                        <td>{{ log.log_timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.log_timestamp }}</td>
-                        <td>{{ log.target_id }}</td>
-                        <td>{{ log.shain_name }}</td>
-                        <td>{{ action_source_map.get(log.action_source, '不明') }}</td>
-                        <td>{{ action_type_map.get(log.action_type, '不明') }}</td>
-                        <td>
-                            {# action_details の内容を整形して表示 #}
-                            {% if log.action_details_dict %}
-                                {% if log.action_type == 2 %} {# 更新の場合 #}
-                                    <ul class="list-unstyled mb-0">
-                                    {% for change in log.action_details_dict %}
-                                        <li>
-                                            <strong>{{ change.label }}:</strong>
-                                            <span class="text-muted">{{ change.before }}</span> →
-                                            <span class="text-success">{{ change.after }}</span>
-                                        </li>
-                                    {% endfor %}
-                                    </ul>
-                                {% elif log.action_details_dict.message %}
-                                    {{ log.action_details_dict.message }}
-                                {% elif log.action_details_dict.deleted_data %}
-                                    削除されました。
+            <h4 class="card-title mb-3">{{ target_type_map.get(current_target_type, '不明') }} の履歴</h4>
+
+            <form method="get" class="mb-4 p-3 border rounded bg-light">
+                <input type="hidden" name="target" value="{{ current_target_type }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">対象ID</span>
+                          <input type="text" name="target_id" value="{{ filters.target_id or '' }}" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">操作者</span>
+                          <input type="text" name="shain_name" value="{{ filters.shain_name or '' }}" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">日時</span>
+                            <input type="date" name="log_timestamp_from" value="{{ filters.log_timestamp_from or '' }}" class="form-control" style="max-width: 150px;">
+                            <span class="input-group-text">～</span>
+                            <input type="date" name="log_timestamp_to" value="{{ filters.log_timestamp_to or '' }}" class="form-control" style="max-width: 150px;">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">発生源</span>
+                          <select name="action_source" class="form-select">
+                            <option value="">すべて</option>
+                            {% for key, value in action_source_map.items() if key != 0 %}
+                              <option value="{{ key }}" {% if filters.action_source == key|string %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group input-group-sm">
+                          <span class="input-group-text">操作</span>
+                          <select name="action_type" class="form-select">
+                            <option value="">すべて</option>
+                            {% for key, value in action_type_map.items() if key != 0 %}
+                              <option value="{{ key }}" {% if filters.action_type == key|string %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                    </div>
+                </div>
+                {% import "ui/search_buttons.html" as sc %}
+                {{ sc.search_buttons(request.path, limit, page, total_pages, total) }}
+            </form>
+
+            {% set th_list = [
+                {"class": "col-date", "label": "日時", "key": "log_timestamp"},
+                {"class": "col-code", "label": "対象ID", "key": "target_id"},
+                {"class": "col-customer", "label": "操作者", "key": "shain_name"},
+                {"class": "col-type", "label": "発生源", "key": "action_source"},
+                {"class": "col-type", "label": "操作", "key": "action_type"},
+                {"class": "col-actions", "label": "詳細", "key": None}
+            ] %}
+
+            <div class="table-container">
+                <table class="table table-bordered list-table">
+                    <thead>
+                        <tr>
+                            {% set base_query_params = request.args.to_dict() %}
+                            {% set _ = base_query_params.pop('sort_by', None) %}
+                            {% set _ = base_query_params.pop('sort_order', None) %}
+                            {% set _ = base_query_params.pop('page', None) %}
+                            {% set base_query_string = base_query_params|urlencode %}
+
+                            {% for th in th_list %}
+                            <th class="{{ th.class }}">
+                                {% if th.key %}
+                                    {% if sort_by == th.key and sort_order == 'asc' %}
+                                    <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=desc">{{ th.label }} <span class="sort-indicator">▲</span></a>
+                                    {% elif sort_by == th.key and sort_order == 'desc' %}
+                                    <a href="?{{ base_query_string }}">{{ th.label }} <span class="sort-indicator">▼</span></a>
+                                    {% else %}
+                                    <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">{{ th.label }}</a>
+                                    {% endif %}
                                 {% else %}
-                                    <pre style="white-space: pre-wrap; word-break: break-all; margin: 0; font-size: 0.8em;">{{ log.action_details }}</pre>
+                                    {{ th.label }}
                                 {% endif %}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center">履歴はありません。</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="col-date">{{ log.log_timestamp.strftime('%Y-%m-%d %H:%M') if log.log_timestamp }}</td>
+                            <td class="col-code">{{ log.target_id }}</td>
+                            <td class="col-customer">{{ log.shain_name }}</td>
+                            <td class="col-type">{{ action_source_map.get(log.action_source, '不明') }}</td>
+                            <td class="col-type">{{ action_type_map.get(log.action_type, '不明') }}</td>
+                            <td class="col-actions">
+                                {% if log.action_details_dict %}
+                                    {% if log.action_type == 2 %} {# 更新 #}
+                                        <ul class="list-unstyled mb-0 small">
+                                        {% for change in log.action_details_dict %}
+                                            <li><strong>{{ change.get('label', '?') }}:</strong> <span class="text-muted">{{ change.get('before', '') }}</span> → <span class="text-success">{{ change.get('after', '') }}</span></li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% elif log.action_details_dict.get('message') %}
+                                        {{ log.action_details_dict.get('message') }}
+                                    {% elif log.action_details_dict.get('deleted_data') %}
+                                        削除されました。
+                                    {% else %}
+                                        <pre class="small m-0">{{ log.action_details }}</pre>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="{{ th_list|length }}" class="text-center text-muted">該当する履歴はありません。</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
