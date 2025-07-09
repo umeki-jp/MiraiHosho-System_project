@@ -120,7 +120,8 @@ TARGET_NAME_MAPPING = {
     1: {'table': 'tr01_applicationlistapplicationlist', 'id_column': 'application_number', 'name_column': 'customer_name'},
     2: {'table': 'ms04_agency_sublist', 'id_column': 'agency_code', 'name_column': 'agency_master_name'},
     3: {'table': 'ms01_customerlist', 'id_column': 'customer_code', 'name_column': 'name'},
-    4: {'table': 'ms02_propertylist', 'id_column': 'property_code', 'name_column': 'property_name'}
+    4: {'table': 'ms02_propertylist', 'id_column': 'property_code', 'name_column': 'property_name'},
+    10: {'table': 'ms_shainlist', 'id_column': 'shain_code', 'name_column': 'shain_name'}
 }
 
 # 操作の発生源 (どうやって行われたか)

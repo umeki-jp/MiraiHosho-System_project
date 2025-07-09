@@ -1,0 +1,10 @@
+SELECT
+  shain_code,
+  shain_name,
+  shain_kana,
+  is_active,
+  last_login_at,
+  registration_date,
+  registration_status
+FROM
+  ms_shainlist

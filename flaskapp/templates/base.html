@@ -531,6 +531,7 @@
 .col-select { width: 80px; text-align: center; }
 .col-status { width: 100px; }
 .col-code { width: 100px; }
+.col-name { width: 150px; }
 .col-customer { width: 150px; }
 .col-date { width: 120px; }
 .col-type { width: 80px; }
@@ -680,18 +681,18 @@
           { title: "04 代理店", link: "/masters/agency_sublist" },
           { title: "05 プラン", link: "/masters/planlist" },
           { title: "06 仲介", link: "/masters/brokerlist" },
-          { title: "07 緊急・入居者", link: "/masters/otherlist" },
-          { title: "社員一覧", link: "/masters/ms_shainlist" }
+          { title: "07 緊急・入居者", link: "/masters/otherlist" }          
         ]
       }
     ];
 
     if (userRole === 1) { // マスター権限の場合のみ「設定」メニューを追加
         menuData.push({
-            title: "設定(マスター用)",
+            title: "設定(管理者用)",
             children: [
-                { title: "認証管理", link: "/masters/ms_auth_user" },
-                { title: "承認機能管理", link: "/settings/approval_management" }
+                { title: "社員マスタ", link: "/masters/ms_shainlist" },
+                { title: "認証マスタ", link: "/masters/ms_auth_user" },
+                { title: "承認機能管理", link: "/settings/approval_management" } 
             ]
         });
     }

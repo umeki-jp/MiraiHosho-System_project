@@ -113,7 +113,7 @@ def show_customerlist():
     results = []
     total = 0
     try:
-        # 検索条件の組み立て (変更なし)
+        # 検索条件の組み立て
         where_clauses = ["1=1"]
         params = {}
         if filters["customer_code"]:
@@ -125,12 +125,14 @@ def show_customerlist():
         if filters["name_kana"]:
             where_clauses.append("name_kana LIKE %(name_kana)s")
             params['name_kana'] = f"%{filters['name_kana']}%"
+        # ▼▼▼ 電話番号と勤務先の検索ロジックを有効化 ▼▼▼
         if filters["tel"]:
             where_clauses.append("(individual_tel1 LIKE %(tel)s OR individual_tel2 LIKE %(tel)s OR corporate_tel1 LIKE %(tel)s OR corporate_tel2 LIKE %(tel)s)")
             params['tel'] = f"%{filters['tel']}%"
         if filters["workplace"]:
             where_clauses.append("individual_workplace LIKE %(workplace)s")
             params['workplace'] = f"%{filters['workplace']}%"
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         if filters["registration_status"]:
             where_clauses.append("registration_status = %(registration_status)s")
             params['registration_status'] = filters['registration_status']
@@ -143,7 +145,7 @@ def show_customerlist():
         where_sql = " AND ".join(where_clauses)
         
         with conn.cursor() as cursor:
-            # 総件数を取得 (変更なし)
+            # 総件数を取得
             params_for_count = params.copy()
             params_for_count['max_limit'] = max_results + 1
             count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql} LIMIT %(max_limit)s"
@@ -161,9 +163,16 @@ def show_customerlist():
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
                 
-                # ▼▼▼【3. SQLにORDER BY句を適用】▼▼▼
-                sql = f"SELECT * FROM ms01_customerlist WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
-                # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+                # .sqlファイルを読み込む処理
+                try:
+                    with open('flaskapp/sql/customers/select_customerlist.sql', 'r', encoding='utf-8') as f:
+                        base_sql = f.read()
+                except FileNotFoundError:
+                    flash("SQL定義ファイルが見つかりません。管理者にご連絡ください。", "danger")
+                    return redirect(url_for('main.index'))
+
+                # 読み込んだベースSQLに、動的な条件を結合する
+                sql = f"{base_sql.strip().rstrip(';')} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
                 
                 cursor.execute(sql, params_with_limit)
                 results = cursor.fetchall()
@@ -269,6 +278,7 @@ def customer_new():
                     action_details={'message': f'顧客 {customer_code} が新規登録されました。'}
                 )
 
+            # 顧客コードを発行し、登録した後に1回だけメッセージを表示
             flash(f"顧客コード {customer_code} を発行し、登録しました。", "success")
             return redirect(url_for("customerlist.customer_edit", customer_code=customer_code))
         

@@ -1,0 +1,115 @@
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
+
+  <div class="row">
+    <label for="shain_code" class="col-sm-2 col-form-label">社員コード</label>
+    <div class="col-sm-10">
+      <input type="text" id="shain_code" class="form-control" readonly style="background: #f0f0f0; max-width: 10em;" value="{{ form_data.shain_code or '' }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_name" class="col-sm-2 col-form-label">社員名 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="shain_name" id="shain_name" class="form-control" style="max-width: 30em;" value="{{ form_data.shain_name or '' }}" maxlength="100">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_kana" class="col-sm-2 col-form-label">社員名カナ</label>
+    <div class="col-sm-10">
+      <input type="text" name="shain_kana" id="shain_kana" class="form-control" style="max-width: 30em;" value="{{ form_data.shain_kana or '' }}" maxlength="100">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="is_active" class="col-sm-2 col-form-label">状態</label>
+    <div class="col-sm-10">
+      <select name="is_active" id="is_active" class="form-select" style="max-width: 10em;">
+        <option value="1" {% if form_data.is_active == 1 %}selected{% endif %}>有効</option>
+        <option value="0" {% if form_data.is_active == 0 %}selected{% endif %}>無効</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">詳細情報</h3>
+
+  <div class="row">
+    <label for="shain_joindate" class="col-sm-2 col-form-label">入社日</label>
+    <div class="col-sm-10">
+      <input type="date" name="shain_joindate" id="shain_joindate" class="form-control" style="max-width: 12em;" value="{{ form_data.shain_joindate.strftime('%Y-%m-%d') if form_data.shain_joindate else '' }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_department" class="col-sm-2 col-form-label">部署</label>
+    <div class="col-sm-10">
+      <input type="text" name="shain_department" id="shain_department" class="form-control" style="max-width: 30em;" value="{{ form_data.shain_department or '' }}" maxlength="40">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_position" class="col-sm-2 col-form-label">役職</label>
+    <div class="col-sm-10">
+      <input type="text" name="shain_position" id="shain_position" class="form-control" style="max-width: 30em;" value="{{ form_data.shain_position or '' }}" maxlength="20">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_leftdate" class="col-sm-2 col-form-label">退職日</label>
+    <div class="col-sm-10">
+      <input type="date" name="shain_leftdate" id="shain_leftdate" class="form-control" style="max-width: 12em;" value="{{ form_data.shain_leftdate.strftime('%Y-%m-%d') if form_data.shain_leftdate else '' }}">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">その他情報</h3>
+
+  <div class="row">
+    <label for="registration_status" class="col-sm-2 col-form-label">登録状況</label>
+    <div class="col-sm-10">
+      {# customerlistと同様に、表示専用のdivと値保持用のhidden inputに変更 #}
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">
+        {{ registration_status.get(form_data.registration_status, '未登録') }}
+      </div>
+      <input type="hidden" name="registration_status" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="shain_remarks" id="shain_remarks" class="form-control"
+      rows="4" maxlength="255"
+      style="width: 100%; box-sizing: border-box;">{{ form_data.shain_remarks or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="registration_date" class="col-sm-2 col-form-label">登録日時</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="text" name="registration_date" id="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" id="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="update_date" class="col-sm-2 col-form-label">更新日時</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="text" name="update_date" id="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" id="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" readonly tabindex="-1">
+    </div>
+  </div>
+</div>
+
+<div class="row">
+    <label for="last_login_at" class="col-sm-2 col-form-label">最終ログイン日時</label>
+    <div class="col-sm-10">
+      <input type="text" name="last_login_at" id="last_login_at" class="form-control" 
+             value="{{ form_data.last_login_at.strftime('%Y-%m-%d %H:%M:%S') if form_data.last_login_at else 'ログイン履歴なし' }}" 
+             readonly tabindex="-1" style="background: #f0f0f0;">
+    </div>
+</div>

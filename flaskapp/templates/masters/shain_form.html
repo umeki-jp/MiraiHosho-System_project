@@ -1,0 +1,31 @@
+{% extends "form_page_base.html" %}
+{% set page_title = "社員" + ("詳細" if mode == "edit" else "新規登録") %}
+
+{# ▼▼▼ 変更点：共通ボタン部品をインポート ▼▼▼ #}
+{% from "shared/_form_components.html" import render_simple_flow_buttons with context %}
+
+{# ============================================================================== #}
+{# 上部ボタンセクション #}
+{# ============================================================================== #}
+{% block left_buttons %}
+  {# ▼▼▼ 変更点：マクロを呼び出す形に変更 ▼▼▼ #}
+  {{ render_simple_flow_buttons(mode, form_data, button_config) }}
+{% endblock %}
+
+{# ============================================================================== #}
+{# メインコンテンツセクション #}
+{# ============================================================================== #}
+{% block main_content %}
+  {# --- フォーム全体を一つのformタグで囲む --- #}
+  <form method="POST" id="main-form">
+    {# フォームの入力欄部品を読み込む #}
+    <div class="form-wrapper">
+      {% include "masters/shain_form_partial.html" %}
+    </div>
+    {# --- 下部ボタンセクション --- #}
+    <div class="form-action-btns mt-4">
+      {# 上部と同じボタンを再利用 #}
+      {{ self.left_buttons() }}
+    </div>
+  </form>
+{% endblock %}

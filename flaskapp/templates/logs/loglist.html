@@ -68,6 +68,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% endfor %}
             </ul>
         </div>
+
+        <!-- 隙間を作る -->
+        <div class="mb-3"></div>
+
+        <!-- 新規登録ボタン -->
+        <div class="d-flex justify-content-start mb-3">
+            <a href="{{ url_for('logs.register_contract_history') if 'logs.register_contract_history' in url_map else '#' }}" 
+               class="btn btn-primary new-btn me-2">契約履歴登録</a>
+            <a href="{{ url_for('logs.register_agency_history') if 'logs.register_agency_history' in url_map else '#' }}" 
+               class="btn btn-primary new-btn">代理店履歴登録</a>
+        </div>
+
         <div class="card-body">
             <h4 class="card-title mb-3">{{ target_type_map.get(current_target_type, '不明') }} の履歴</h4>
 

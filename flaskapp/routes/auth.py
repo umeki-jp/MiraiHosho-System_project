@@ -2,6 +2,7 @@
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from flaskapp.utils.db import get_db_connection # ### 変更点 1: 共通関数をインポート
+import datetime
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -48,6 +49,17 @@ def login():
                     session['role'] = int(user['role'])
                     session['shain_code'] = user['shain_code']
                     session['shain_name'] = user['shain_name']
+                    
+                    try:
+                        update_sql = "UPDATE ms_shainlist SET last_login_at = %s WHERE shain_code = %s"
+                        current_time = datetime.datetime.now()
+                        # user['shain_code']は、直前のSELECT文で取得した値
+                        cursor.execute(update_sql, (current_time, user['shain_code']))
+                        # conn.commit() は、この後のfinallyブロックの外で実行される
+                    except Exception as e:
+                        print(f"最終ログイン日時の更新に失敗しました: {e}")
+                        
+                    conn.commit() # SELECTとUPDATEの両方を確定
                     
                     return redirect(url_for("main.main_page"))
                 else:
