@@ -8,7 +8,7 @@ main_bp = Blueprint("main", __name__)
 @main_bp.route("/main")
 def main_page():
     # ログインしていない場合はログインページへリダイレクト
-    if 'account_id' not in session:
+    if 'user_id' not in session:
         return redirect(url_for('auth.login'))
 
     # テンプレートに渡す変数をあらかじめ定義

@@ -27,7 +27,7 @@ def get_shain_field_labels():
 #
 # 一覧表示機能
 #
-@shainlist_bp.route("/ms_shainlist")
+@shainlist_bp.route("/shainlist")
 def show_shainlist():
     """社員一覧の表示と検索を行う"""
     try:

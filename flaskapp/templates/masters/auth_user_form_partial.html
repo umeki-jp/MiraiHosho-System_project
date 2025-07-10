@@ -1,0 +1,100 @@
+{# ▼▼▼ 基本情報セクション ▼▼▼ #}
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
+
+  <div class="row">
+    <label for="user_id" class="col-sm-2 col-form-label">User ID</label>
+    <div class="col-sm-10">
+      <input type="text" id="user_id" class="form-control" readonly style="background: #f0f0f0; max-width: 15em;" value="{{ form_data.user_id or '' }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="account_id" class="col-sm-2 col-form-label">アカウントID <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="account_id" id="account_id" class="form-control" style="max-width: 30em;" value="{{ form_data.account_id or '' }}" maxlength="50">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="password" class="col-sm-2 col-form-label">パスワード {% if mode != 'edit' %}<span class="text-danger">*</span>{% endif %}</label>
+    <div class="col-sm-10">
+      <input type="password" name="password" id="password" class="form-control" style="max-width: 30em;" placeholder="{% if mode == 'edit' %}変更する場合のみ入力してください{% endif %}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="shain_code" class="col-sm-2 col-form-label">社員コード</label>
+    <div class="col-sm-10">
+      <input type="text" name="shain_code" id="shain_code" class="form-control" style="max-width: 15em;" value="{{ form_data.shain_code or '' }}" maxlength="10">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="login_enabled" class="col-sm-2 col-form-label">状態</label>
+    <div class="col-sm-10">
+      <select name="login_enabled" id="login_enabled" class="form-select" style="max-width: 10em;">
+        <option value="1" {% if form_data.login_enabled == 1 %}selected{% endif %}>有効</option>
+        <option value="0" {% if form_data.login_enabled == 0 %}selected{% endif %}>無効</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+{# ▼▼▼ 詳細情報セクション ▼▼▼ #}
+<div class="form-section">
+  <h3 class="form-section-title">詳細情報</h3>
+
+  <div class="row">
+    <label for="role" class="col-sm-2 col-form-label">権限</label>
+    <div class="col-sm-10">
+      <select name="role" id="role" class="form-select" style="max-width: 15em;">
+  {% for key, value in auth_role.items() %}
+    <option value="{{ key }}" {% if form_data.role == key %}selected{% endif %}>
+      {{ value }}
+    </option>
+  {% endfor %}
+</select>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="auth_remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="auth_remarks" id="auth_remarks" class="form-control"
+      rows="4" maxlength="255"
+      style="width: 100%; box-sizing: border-box;">{{ form_data.auth_remarks or '' }}</textarea>
+    </div>
+  </div>
+</div>
+
+{# ▼▼▼ その他情報セクション（登録・更新情報）▼▼▼ #}
+<div class="form-section">
+  <h3 class="form-section-title">その他情報</h3>
+
+  <div class="row">
+    <label for="registration_status" class="col-sm-2 col-form-label">登録状況</label>
+    <div class="col-sm-10">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">
+        {{ registration_status.get(form_data.registration_status, '未登録') }}
+      </div>
+      <input type="hidden" name="registration_status" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="registration_date" class="col-sm-2 col-form-label">登録日時</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="text" name="registration_date" id="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" id="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="update_date" class="col-sm-2 col-form-label">更新日時</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="text" name="update_date" id="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" id="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" readonly tabindex="-1">
+    </div>
+  </div>
+</div>

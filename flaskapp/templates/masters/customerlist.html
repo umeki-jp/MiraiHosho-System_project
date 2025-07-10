@@ -23,14 +23,14 @@
 
   {# ▼▼▼ th_listにソート用のキーを追加 ▼▼▼ #}
   {% set th_list = [
-    {"class": "col-select", "label": "選択", "key": None},
-    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
+    {"class": "col-select", "label": "選択", "key": None}, 
     {"class": "col-code", "label": "顧客cd", "key": "customer_code"},
     {"class": "col-customer", "label": "名前", "key": "name"},
     {"class": "col-customer", "label": "名前ｶﾅ", "key": "name_kana"},
     {"class": "col-date", "label": "生年月日", "key": "individual_birthdate"}, 
     {"class": "col-type", "label": "区分", "key": "typeofcustomer"},
     {"class": "col-rank", "label": "ランク", "key": "customer_rank"},
+    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
     {"class": "col-date", "label": "登録日", "key": "registration_date"}
   ] %}
   {# ▲▲▲ th_list定義終了 ▲▲▲ #}
@@ -130,15 +130,13 @@
                             選択
                         </a>
                         </td>
-                        <td class="col-status">
-                        {{ registration_status.get(c.registration_status, '不明') }}
-                        </td>
                         <td class="col-code">{{ c.customer_code or '' }}</td>
                         <td class="col-customer">{{ c.name or '' }}</td>
                         <td class="col-customer">{{ c.name_kana or '' }}</td>
                         <td class="col-date">{{ c.individual_birthdate.strftime('%Y-%m-%d') if c.individual_birthdate else '' }}</td>
                         <td class="col-type">{{ c.typeofcustomer or '' }}</td>
                         <td class="col-rank">{{ customer_rank_map.get(c.customer_rank, '未設定') }}</td>
+                        <td class="col-status">{{ registration_status.get(c.registration_status, '不明') }}</td>
                         <td class="col-date">{{ c.registration_date.strftime('%Y-%m-%d') if c.registration_date else '' }}</td>
                     </tr>
                 {% endfor %}

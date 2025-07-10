@@ -17,15 +17,15 @@
   {# ▼▼▼ 表示するテーブルヘッダーを定義 ▼▼▼ #}
   {% set th_list = [
     {"class": "col-select", "label": "選択", "key": None},
-    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
     {"class": "col-code", "label": "社員cd", "key": "shain_code"},
     {"class": "col-name", "label": "社員名", "key": "shain_name"},
     {"class": "col-name", "label": "社員名ｶﾅ", "key": "shain_kana"},
-    {"class": "col-status", "label": "有効", "key": "is_active"},
-    {"class": "col-date", "label": "登録日", "key": "registration_date"},
-    {"class": "col-date", "label": "最終login", "key": "last_login_at"} 
-    
-  ] %}
+    {"class": "col-status", "label": "状態", "key": "is_active"},
+    {"class": "col-date", "label": "最終login", "key": "last_login_at"},
+    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
+    {"class": "col-date", "label": "登録日", "key": "registration_date"}
+   ] %}
+
   {% set colspan = th_list | length %}
 
   <form method="get" class="mb-4 p-3 border rounded bg-light">
@@ -55,7 +55,7 @@
       </div>
       <div class="col-md-3">
         <div class="input-group input-group-sm">
-          <span class="input-group-text">有効</span>
+          <span class="input-group-text">状態</span>
           <select name="is_active" id="is_active" class="form-select">
             <option value="">すべて</option>
             <option value="1" {% if filters.is_active == '1' %}selected{% endif %}>有効</option>
@@ -73,7 +73,7 @@
         </div>
       </div>
     </div>
-    {{ sc.search_buttons("/masters/ms_shainlist", selected_limit, page, total_pages, total) }}
+    {{ sc.search_buttons("/masters/shainlist", selected_limit, page, total_pages, total) }}
   </form>
 
   <div class="table-container">
@@ -108,27 +108,27 @@
             {% if shains %}
                 {% for s in shains %}
                     <tr>
-                        <td class="col-select">
-                            <a href="{{ url_for('shainlist.shain_edit', shain_code=s.shain_code) }}"
-                               class="select-link"
-                               onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
-                                選択
-                            </a>
-                        </td>
-                        <td class="col-status">{{ registration_status.get(s.registration_status, '不明') }}</td>
-                        <td class="col-code">{{ s.shain_code or '' }}</td>
-                        <td class="col-name">{{ s.shain_name or '' }}</td>
-                        <td class="col-name">{{ s.shain_kana or '' }}</td>
-                        <td class="col-status">
-                            {% if s.is_active == 1 %}
-                                <span class="badge bg-success">有効</span>
-                            {% else %}
-                                <span class="badge bg-danger">無効</span>
-                            {% endif %}
-                        </td>
-                        <td class="col-date">{{ s.registration_date.strftime('%Y-%m-%d') if s.registration_date else '' }}</td>
-                        <td class="col-date">{{ s.last_login_at.strftime('%Y-%m-%d') if s.last_login_at else '' }}</td> <!-- 修正箇所 -->
-                    </tr>
+<td class="col-select">
+    <a href="{{ url_for('shainlist.shain_edit', shain_code=s.shain_code) }}"
+       class="select-link"
+       onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+        選択
+    </a>
+</td>
+<td class="col-code">{{ s.shain_code or '' }}</td>
+<td class="col-name">{{ s.shain_name or '' }}</td>
+<td class="col-name">{{ s.shain_kana or '' }}</td>
+<td class="col-status">
+    {% if s.is_active == 1 %}
+        <span class="badge bg-success">有効</span>
+    {% else %}
+        <span class="badge bg-danger">無効</span>
+    {% endif %}
+</td>
+<td class="col-date">{{ s.last_login_at.strftime('%Y-%m-%d') if s.last_login_at else '' }}</td>
+<td class="col-status">{{ registration_status.get(s.registration_status, '不明') }}</td>
+<td class="col-date">{{ s.registration_date.strftime('%Y-%m-%d') if s.registration_date else '' }}</td>
+</tr>
                 {% endfor %}
             {% else %}
                 <tr>

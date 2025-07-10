@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{# ▼▼▼ 変更 ▼▼▼ #}
+{% set page_title = "認証マスタ一覧" %}
+
+{% block content %}
+
+  <div class="mb-4 d-flex justify-content-start">
+    {# ▼▼▼ 変更: 新規登録画面へのURL #}
+    <a href="{{ url_for('auth_user.auth_user_new') }}"
+       class="btn btn-primary new-btn"
+       onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+      新規登録
+    </a>
+  </div>
+
+  {% import "ui/common_parts.html" as ui %}
+  {% import "ui/search_buttons.html" as sc %}
+
+  {# ▼▼▼ 変更: 表示するテーブルヘッダーを認証マスタ用に定義 ▼▼▼ #}
+  {% set th_list = [
+    {"class": "col-select", "label": "選択", "key": None},
+    {"class": "col-id", "label": "User ID", "key": "user_id"},
+    {"class": "col-id", "label": "アカウントID", "key": "account_id"},
+    {"class": "col-name", "label": "社員名", "key": "shain_name"},
+    {"class": "col-rank", "label": "権限", "key": "role"},
+    {"class": "col-status", "label": "状態", "key": "login_enabled"},
+    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
+    {"class": "col-date", "label": "登録日", "key": "registration_date"}
+  ] %}
+  {% set colspan = th_list | length %}
+
+  {# ▼▼▼ 変更: 検索フォームを認証マスタ用に変更 ▼▼▼ #}
+  <form method="get" class="mb-4 p-3 border rounded bg-light">
+    <div class="row g-3">
+      <div class="col-md-4">
+        {{ ui.search_input("User ID", "user_id", filters.user_id or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("アカウントID", "account_id", filters.account_id or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("社員名", "shain_name", filters.shain_name or "") }}
+      </div>
+      
+      <div class="col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">権限</span>
+          <select name="role" id="role" class="form-select">
+  <option value="">すべて</option>
+  {% for key, value in auth_role.items() %}
+    <option value="{{ key }}" {% if filters.role == key|string %}selected{% endif %}>
+      {{ value }}
+    </option>
+  {% endfor %}
+</select>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">状態</span>
+          <select name="login_enabled" id="login_enabled" class="form-select">
+            <option value="">すべて</option>
+            <option value="1" {% if filters.login_enabled == '1' %}selected{% endif %}>有効</option>
+            <option value="0" {% if filters.login_enabled == '0' %}selected{% endif %}>無効</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">登録日</span>
+            <input type="date" name="registration_date_from" value="{{ filters.registration_date_from or '' }}" class="form-control" style="max-width: 150px;">
+            <span class="input-group-text">～</span>
+            <input type="date" name="registration_date_to" value="{{ filters.registration_date_to or '' }}" class="form-control" style="max-width: 150px;">
+        </div>
+      </div>
+    </div>
+    {# ▼▼▼ 変更: 検索ボタンのクリアURL #}
+    {{ sc.search_buttons("/masters/auth_user", selected_limit, page, total_pages, total) }}
+  </form>
+
+  <div class="table-container">
+    <table class="table table-bordered list-table">
+        <thead>
+            <tr>
+                {# ヘッダーのソート機能はそのまま流用 #}
+                {% set base_query_params = request.args.to_dict() %}
+                {% set _ = base_query_params.pop('sort_by', None) %}
+                {% set _ = base_query_params.pop('sort_order', None) %}
+                {% set _ = base_query_params.pop('page', None) %}
+                {% set base_query_string = base_query_params|urlencode %}
+
+                {% for th in th_list %}
+                    <th class="{{ th.class }}">
+                        {% if th.key %}
+                            {% if sort_by == th.key and sort_order == 'asc' %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=desc">{{ th.label }} <span class="sort-indicator">▲</span></a>
+                            {% elif sort_by == th.key and sort_order == 'desc' %}
+                                <a href="?{{ base_query_string }}">{{ th.label }} <span class="sort-indicator">▼</span></a>
+                            {% else %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">{{ th.label }}</a>
+                            {% endif %}
+                        {% else %}
+                            {{ th.label }}
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {# ▼▼▼ 変更: ループ変数と表示するプロパティを認証マスタ用に変更 ▼▼▼ #}
+            {% if auth_users %}
+                {% for au in auth_users %}
+                    <tr>
+                        <td class="col-select">
+                            {# 編集画面へのリンク。キーをuser_idに変更 #}
+                            <a href="{{ url_for('auth_user.auth_user_edit', user_id=au.user_id) }}"
+                               class="select-link"
+                               onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                                選択
+                            </a>
+                        </td>
+                        <td class="col-id">{{ au.user_id or '' }}</td>
+                        <td class="col-id">{{ au.account_id or '' }}</td>
+                        <td class="col-name">{{ au.shain_name or '' }}</td>
+                        {# (補足) ここも本来は定数マップで変換するのが望ましい #}
+                        <td class="col-status">
+                            {{ auth_role.get(au.role, '不明') }} 
+                        </td>
+                        <td class="col-status">
+                            {% if au.login_enabled == 1 %}
+                                <span class="badge bg-success">有効</span>
+                            {% else %}
+                                <span class="badge bg-danger">無効</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-status">{{ registration_status.get(au.registration_status, '不明') }}</td>
+                        <td class="col-date">{{ au.registration_date.strftime('%Y-%m-%d') if au.registration_date else '' }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    {# ▼▼▼ 変更: メッセージ #}
+                    <td colspan="{{ colspan }}" class="text-center text-muted">
+                        該当するユーザーがいません。
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+  </div>
+{% endblock %}

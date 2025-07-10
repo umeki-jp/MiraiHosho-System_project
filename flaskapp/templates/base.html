@@ -298,8 +298,10 @@
   td.col-application,
   th.col-contract,
   td.col-contract,
-  td.col-code,
   th.col-code,
+  td.col-code,
+  th.col-id,
+  td.col-id,
   th.col-collection, td.col-collection,
   th.col-status, td.col-status,
   th.col-room, td.col-room,
@@ -531,6 +533,7 @@
 .col-select { width: 80px; text-align: center; }
 .col-status { width: 100px; }
 .col-code { width: 100px; }
+.col-id { width: 100px; }
 .col-name { width: 150px; }
 .col-customer { width: 150px; }
 .col-date { width: 120px; }
@@ -690,8 +693,8 @@
         menuData.push({
             title: "設定(管理者用)",
             children: [
-                { title: "社員マスタ", link: "/masters/ms_shainlist" },
-                { title: "認証マスタ", link: "/masters/ms_auth_user" },
+                { title: "社員マスタ", link: "/masters/shainlist" },
+                { title: "認証マスタ", link: "/masters/auth_user" },
                 { title: "承認機能管理", link: "/settings/approval_management" } 
             ]
         });
