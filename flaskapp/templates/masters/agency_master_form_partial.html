@@ -1,0 +1,133 @@
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">代理店本社コード</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" readonly style="background: #f0f0f0; max-width: 10em;" value="{{ form_data.agency_master_code or '' }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">登録状況</label>
+    <div class="col-sm-10">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ registration_status[form_data.registration_status] or '未定義' }}</div>
+      <input type="hidden" name="registration_status" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="agency_master_name" class="col-sm-2 col-form-label">代理店本社名 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="agency_master_name" id="agency_master_name" class="form-control" style="max-width: 40em;" required value="{{ form_data.agency_master_name or '' }}" maxlength="100">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="agency_master_name_kana" class="col-sm-2 col-form-label">代理店本社名カナ</label>
+    <div class="col-sm-10">
+        <input type="text" name="agency_master_name_kana" id="agency_master_name_kana" class="form-control" style="max-width: 40em;" value="{{ form_data.agency_master_name_kana or '' }}" maxlength="100" placeholder="半角カナ入力">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+    <h3 class="form-section-title">所在地・連絡先</h3>
+    <div class="row">
+        <label class="col-sm-2 col-form-label">住所</label>
+        <div class="col-sm-10">
+          <div class="address-lookup-group">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <input type="text" name="agency_master_postalcode" id="agency_master_postalcode" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.agency_master_postalcode or '' }}" maxlength="8">
+              <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button">住所検索</button>
+            </div>
+            <div class="d-flex gap-2 mb-2">
+              <input type="text" name="agency_master_prefecture" id="agency_master_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.agency_master_prefecture or '' }}" maxlength="10">
+              <input type="text" name="agency_master_city" id="agency_master_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.agency_master_city or '' }}" maxlength="50">
+            </div>
+            <div class="mb-2">
+                <input type="text" name="agency_master_address" id="agency_master_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.agency_master_address or '' }}" maxlength="100">
+            </div>
+          </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="agency_master_tel" class="col-sm-2 col-form-label">電話番号</label>
+        <div class="col-sm-10">
+            <input type="tel" name="agency_master_tel" id="agency_master_tel" class="form-control" style="max-width: 20em;" value="{{ form_data.agency_master_tel or '' }}" maxlength="20">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agency_master_fax" class="col-sm-2 col-form-label">FAX</label>
+        <div class="col-sm-10">
+            <input type="tel" name="agency_master_fax" id="agency_master_fax" class="form-control" style="max-width: 20em;" value="{{ form_data.agency_master_fax or '' }}" maxlength="20">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agency_master_mail" class="col-sm-2 col-form-label">メールアドレス</label>
+        <div class="col-sm-10">
+            <input type="email" name="agency_master_mail" id="agency_master_mail" class="form-control" style="max-width: 30em;" value="{{ form_data.agency_master_mail or '' }}" maxlength="255">
+        </div>
+    </div>
+</div>
+
+<div class="form-section">
+    <h3 class="form-section-title">契約・ランク情報</h3>
+    <div class="row">
+        <label for="contract_version" class="col-sm-2 col-form-label">契約書ver</label>
+        <div class="col-sm-10">
+            <select name="contract_version" id="contract_version" class="form-select" style="max-width: 20em;">
+                {% for key, value in agreement_versions.items() %}
+                  <option value="{{ key }}" {% if form_data.contract_version == key %}selected{% endif %}>
+                    {{ value }}
+                  </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <label for="contract_date" class="col-sm-2 col-form-label">契約日</label>
+        <div class="col-sm-10">
+            <input type="date" name="contract_date" id="contract_date" class="form-control" style="max-width: 12em;" value="{{ form_data.contract_date or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agency_master_rank" class="col-sm-2 col-form-label">代理店ランク</label>
+        <div class="col-sm-10">
+            <input type="text" name="agency_master_rank" id="agency_master_rank" class="form-control" style="max-width: 10em;" value="{{ form_data.agency_master_rank or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agency_master_rankdetails" class="col-sm-2 col-form-label">ランク詳細</label>
+        <div class="col-sm-10">
+            <input type="text" name="agency_master_rankdetails" id="agency_master_rankdetails" class="form-control" value="{{ form_data.agency_master_rankdetails or '' }}">
+        </div>
+    </div>
+</div>
+
+
+<div class="form-section">
+  <h3 class="form-section-title">その他情報・システム情報</h3>
+  <div class="row">
+    <label for="agency_master_remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="agency_master_remarks" id="agency_master_remarks" class="form-control" rows="4">{{ form_data.agency_master_remarks or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">登録情報</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">更新情報</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" readonly tabindex="-1">
+    </div>
+  </div>
+</div>

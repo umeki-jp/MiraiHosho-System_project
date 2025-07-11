@@ -28,7 +28,7 @@ def get_property_field_labels():
         "property_postalcode": "郵便番号",
         "property_prefecture": "都道府県",
         "property_city": "市区町村",
-        "property_address": "番地以降",
+        "property_address": "番地",
         "landlord_agency_branch_cd": "家主・管理会社コード",
         "landlord_name": "家主・管理会社名",
         "property_remarks": "備考",
@@ -294,6 +294,19 @@ def property_edit(property_code):
 
             elif action == "delete_instant":
                 # 物件に紐づくデータがあるかチェック（将来的に実装）
+                # ▼▼▼ TODO: 将来、申込テーブルに物件コードが追加されたら、以下のコメントを解除する ▼▼▼
+            # with conn.cursor() as cursor:
+            #     cursor.execute("SELECT application_number FROM tr01_applicationlist WHERE property_code = %s", (property_code,))
+            #     related_applications = cursor.fetchall()
+            #
+            # if related_applications:
+            #     deletable = False
+            #     app_numbers = ", ".join([app['application_number'] for app in related_applications])
+            #     message = f"この物件（{property_code}）は申込番号 ({app_numbers}) と紐づいているため、削除できません。"
+            # else:
+            #     deletable = True
+            #     message = f"本当に「{property_code}」を削除しますか？"
+            # ▲▲▲ ここまで ▲▲▲
                 deletable = True
                 message = f"本当に「{property_code}」を削除しますか？"
                 
