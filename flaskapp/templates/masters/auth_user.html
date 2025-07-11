@@ -4,6 +4,12 @@
 
 {% block content %}
 
+{% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+{% endif %}
+
   <div class="mb-4 d-flex justify-content-start">
     {# ▼▼▼ 変更: 新規登録画面へのURL #}
     <a href="{{ url_for('auth_user.auth_user_new') }}"

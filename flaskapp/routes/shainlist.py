@@ -58,8 +58,8 @@ def show_shainlist():
 
         conn = get_db_connection()
         if not conn:
-            flash("データベースに接続できませんでした。", "danger")
-            return render_template("masters/shainlist.html", shains=[], total=0, page=page, limit=limit, total_pages=0, filters=filters)
+            error_message = "データベースに接続できませんでした。"
+            return render_template("masters/shainlist.html", shains=[], total=0, page=page, limit=limit, total_pages=0, filters=filters, error_message=error_message)
 
         results = []
         total = 0
@@ -110,7 +110,7 @@ def show_shainlist():
                 results = cursor.fetchall()
 
     except Exception as e:
-        flash(f"データ取得中にエラーが発生しました: {e}", "danger")
+        error_message = f"データ取得中にエラーが発生しました: {e}"
         results = []
         total = 0
     finally:
@@ -130,7 +130,8 @@ def show_shainlist():
         has_search=has_search,
         selected_limit=str(limit),
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
+        error_message=error_message if 'error_message' in locals() else None
     )
 
 #

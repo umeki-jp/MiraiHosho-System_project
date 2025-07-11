@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // カタカナを半角に変換する機能
 document.addEventListener('DOMContentLoaded', function () {
-  const kanaFields = ['name_kana', 'shain_kana']; // 対象フィールドのIDを配列で管理
+  const kanaFields = ['name_kana', 'shain_kana','property_name_kana']; // 対象フィールドのIDを配列で管理
 
     kanaFields.forEach(fieldId => {
         const kanaInput = document.getElementById(fieldId);
@@ -456,10 +456,11 @@ document.addEventListener('DOMContentLoaded', function () {
             'わ':'ﾜ','を':'ｦ','ん':'ﾝ','ゔ':'ｳﾞ'
         };
         return str
-            // 全角スペース → 半角スペース
-            .replace(/　/g, ' ')
-            // 全角カタカナ・ひらがな → 半角カタカナ
-            .replace(/[\u30A1-\u30F6\u3041-\u3096]/g, match => kanaMap[match] || match);
-    }
+        // 全角スペース → 半角スペース
+        .replace(/　/g, ' ')
+        // kanaMapに含まれる任意の全角文字 → 半角文字
+        .replace(/./g, match => kanaMap[match] || match);
+
+        }
 });
 

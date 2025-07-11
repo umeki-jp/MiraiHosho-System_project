@@ -3,6 +3,12 @@
 
 {% block content %}
 
+{% if error_message %}
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+{% endif %}
+
   <div class="mb-4 d-flex justify-content-start">
     <a href="{{ url_for('shainlist.shain_new') }}"
        class="btn btn-primary new-btn"

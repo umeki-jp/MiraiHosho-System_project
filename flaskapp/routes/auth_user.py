@@ -39,11 +39,11 @@ def get_auth_user_field_labels():
 #
 # 一覧表示機能
 #
-@auth_user_bp.route("/auth_user") # 変更: Blueprint名とURL
+@auth_user_bp.route("/auth_user")  # 認証マスタ一覧表示
 def show_auth_userlist():
-    """認証マスタ一覧の表示と検索を行う""" # 変更: 説明
+    """認証マスタ一覧の表示と検索を行う"""
     try:
-        # 変更: 認証マスタ用の検索フィルターキー
+        # 検索フィルターの値を取得
         filters = {
             "user_id": request.args.get("user_id", "").strip(),
             "account_id": request.args.get("account_id", "").strip(),
@@ -54,35 +54,37 @@ def show_auth_userlist():
             "registration_date_to": request.args.get("registration_date_to", "").strip(),
         }
         has_search = any(filters.values())
-        
+
+        # ページネーションの設定
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 20, type=int)
         offset = (page - 1) * limit
 
-        # 変更: ソート対象カラムを認証マスタ用に
+        # ソートの設定
         sort_by = request.args.get("sort_by", "user_id")
         sort_order = request.args.get("sort_order", "asc")
         allowed_sort_columns = ['user_id', 'account_id', 'shain_name', 'role', 'login_enabled', 'registration_date']
-        if sort_by not in allowed_sort_columns: sort_by = 'user_id'
-        if sort_order not in ['asc', 'desc']: sort_order = 'asc'
-        
-        # 変更: JOINを考慮し、ソートキーにテーブルエイリアスを付与
+        if sort_by not in allowed_sort_columns:
+            sort_by = 'user_id'
+        if sort_order not in ['asc', 'desc']:
+            sort_order = 'asc'
+
+        # ソートキーにテーブルエイリアスを付与
         sort_by_aliased = f"au.{sort_by}"
         if sort_by == 'shain_name':
             sort_by_aliased = f"ms.{sort_by}"
-            
+
         order_by_sql = f"ORDER BY {sort_by_aliased} {sort_order.upper()}"
 
         conn = get_db_connection()
         if not conn:
-            flash("データベースに接続できませんでした。", "danger")
-            # 変更: テンプレート名と渡す変数
-            return render_template("masters/auth_user.html", auth_users=[], total=0, page=page, limit=limit, total_pages=0, filters=filters)
+            error_message = "データベースに接続できませんでした。"
+            return render_template("masters/auth_user.html", auth_users=[], total=0, page=page, limit=limit, total_pages=0, filters=filters, error_message=error_message)
 
         results = []
         total = 0
         with conn.cursor() as cursor:
-            # 変更: 検索条件の組み立てを認証マスタ用に
+            # 検索条件の組み立て
             where_clauses = ["1=1"]
             params = {}
             if filters["user_id"]:
@@ -104,15 +106,14 @@ def show_auth_userlist():
                 where_clauses.append("au.registration_date >= %(registration_date_from)s")
                 params['registration_date_from'] = filters['registration_date_from']
             if filters["registration_date_to"]:
-                # 日付の終わりは、その日の終わりまでを含むように調整
                 date_to = datetime.datetime.strptime(filters["registration_date_to"], '%Y-%m-%d').date()
                 date_to_end_of_day = datetime.datetime.combine(date_to, datetime.time.max)
                 where_clauses.append("au.registration_date <= %(registration_date_to)s")
                 params['registration_date_to'] = date_to_end_of_day
 
             where_sql = " AND ".join(where_clauses)
-            
-            # 変更: 総件数取得SQLにJOINを追加
+
+            # 総件数を取得
             count_sql = f"""
                 SELECT COUNT(*) as total 
                 FROM ms_auth_user AS au 
@@ -126,26 +127,24 @@ def show_auth_userlist():
                 params_with_limit = params.copy()
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
-                
-                # 変更: 読み込むSQLファイルを認証マスタ用に
+
                 with open('flaskapp/sql/auth/select_auth_user.sql', 'r', encoding='utf-8') as f:
                     base_sql = f.read()
-                
+
                 sql = f"{base_sql.strip().rstrip(';')} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
                 cursor.execute(sql, params_with_limit)
                 results = cursor.fetchall()
 
     except Exception as e:
-        flash(f"データ取得中にエラーが発生しました: {e}", "danger")
+        error_message = f"データ取得中にエラーが発生しました: {e}"
         results = []
         total = 0
     finally:
         if conn:
             conn.close()
-            
+
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
-    
-    # 変更: テンプレート名と渡す変数を認証マスタ用に
+
     return render_template(
         "masters/auth_user.html",
         auth_users=results,
@@ -157,7 +156,8 @@ def show_auth_userlist():
         has_search=has_search,
         selected_limit=str(limit),
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
+        error_message=error_message if 'error_message' in locals() else None
     )
 
 #

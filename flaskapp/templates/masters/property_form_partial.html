@@ -1,0 +1,107 @@
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
+
+  <div class="row">
+    <label for="property_code" class="col-sm-2 col-form-label">物件コード</label>
+    <div class="col-sm-10">
+      <input type="text" id="property_code" class="form-control" readonly style="background: #f0f0f0; max-width: 10em;" value="{{ form_data.property_code or '' }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="registration_status" class="col-sm-2 col-form-label">ステータス</label>
+    <div class="col-sm-10">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ registration_status[form_data.registration_status] or '未定義' }}</div>
+      <input type="hidden" name="registration_status" style="max-width: 10em;" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="property_name" class="col-sm-2 col-form-label">物件名 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="property_name" id="property_name" class="form-control" style="max-width: 40em;" required value="{{ form_data.property_name or '' }}" maxlength="100" placeholder="全角入力">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="property_name_kana" class="col-sm-2 col-form-label">物件名カナ</label>
+    <div class="col-sm-10">
+        <input type="text" name="property_name_kana" id="property_name_kana" class="form-control" 
+               style="max-width: 40em;" value="{{ form_data.property_name_kana or '' }}" 
+               maxlength="100" placeholder="半角カナ入力" 
+               pattern="[\uFF61-\uFF9F\uFF10-\uFF19\uFF21-\uFF3A\uFF41-\uFF5A\s]*"
+               title="半角カナのみ入力してください">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">所在地情報</h3>
+  <div class="row">
+    <label class="col-sm-2 col-form-label">住所</label>
+    <div class="col-sm-10">
+      <div class="address-lookup-group">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <input type="text" name="property_postalcode" id="property_postalcode" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.property_postalcode or '' }}" maxlength="8">
+          <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button" id="search-address-btn">住所検索</button>
+          <div class="kana-display-area small text-muted ms-2">
+            <span class="city-kana-output"></span> <span class="town-kana-output"></span>
+          </div>
+        </div>
+        <div class="d-flex gap-2 mb-2">
+          <input type="text" name="property_prefecture" id="property_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.property_prefecture or '' }}" maxlength="100">
+          <input type="text" name="property_city" id="property_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.property_city or '' }}" maxlength="100">
+          <button class="btn btn-outline-secondary btn-sm reverse-address-search-btn" type="button">逆引き検索</button>
+        </div>
+        <div class="mb-2">
+          <input type="text" name="property_address" id="property_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.property_address or '' }}" maxlength="255">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">家主・管理会社情報</h3>
+  <div class="row">
+    <label for="landlord_agency_branch_cd" class="col-sm-2 col-form-label">家主・管理会社コード</label>
+    <div class="col-sm-10">
+      <input type="text" name="landlord_agency_branch_cd" id="landlord_agency_branch_cd" class="form-control" style="max-width: 20em;" value="{{ form_data.landlord_agency_branch_cd or '' }}" maxlength="20">
+    </div>
+  </div>
+  <div class="row">
+    <label for="landlord_name" class="col-sm-2 col-form-label">家主・管理会社名</label>
+    <div class="col-sm-10">
+      <input type="text" name="landlord_name" id="landlord_name" class="form-control" style="max-width: 30em;" value="{{ form_data.landlord_name or '' }}" maxlength="100">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">その他情報</h3>
+
+  <div class="row">
+    <label for="property_remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="property_remarks" id="property_remarks" class="form-control"
+      rows="4" maxlength="255"
+      style="width: 100%; box-sizing: border-box;">{{ form_data.property_remarks or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="registration_date" class="col-sm-2 col-form-label">登録日</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="registration_date" id="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" id="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" maxlength="100" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="update_date" class="col-sm-2 col-form-label">更新日</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="update_date" id="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" id="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" maxlength="100" readonly tabindex="-1">
+    </div>
+  </div>
+</div>
