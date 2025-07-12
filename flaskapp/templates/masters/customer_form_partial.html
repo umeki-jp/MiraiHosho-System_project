@@ -157,7 +157,9 @@
   <div class="row">
     <label for="individual_workplace" class="col-sm-2 col-form-label">勤務先・通学先</label>
     <div class="col-sm-10">
-      <input type="text" name="individual_workplace" id="individual_workplace" class="form-control" style="max-width: 20em;"value="{{ form_data.individual_workplace or '' }}" maxlength="100">
+      <input type="text" name="individual_workplace" id="individual_workplace" class="form-control" 
+           style="max-width: 30em;" value="{{ form_data.individual_workplace or '' }}" 
+           maxlength="100" placeholder="全角入力">
     </div>
   </div>
 

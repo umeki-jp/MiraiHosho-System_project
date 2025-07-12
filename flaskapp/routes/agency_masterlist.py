@@ -217,10 +217,14 @@ def agency_master_new():
         
         # GETリクエスト
         form_data = {f: "" for f in get_agency_master_fields()}
+        # 代理店ランクの選択肢を生成
+        agency_rank_list = [{'value': key, 'label': value} for key, value in constants.AGENCY_RANK_MAP.items()]
+        
         return render_template("masters/agency_master_form.html",
                                mode="create",
                                form_data=form_data,
                                agreement_versions=constants.AGREEMENT_VERSION_MAP,
+                               agency_rank_list=agency_rank_list,  # 追加
                                button_config=button_config)
     finally:
         if conn and conn.open: conn.close()
@@ -299,6 +303,13 @@ def agency_master_edit(agency_master_code):
                     elif field == 'contract_version':
                         before_str = constants.AGREEMENT_VERSION_MAP.get(int(before_val) if str(before_val).isdigit() else before_val, '未設定')
                         after_str = constants.AGREEMENT_VERSION_MAP.get(int(after_val) if str(after_val).isdigit() else after_val, '未設定')
+
+                    # ▼▼▼【ここから追加】▼▼▼
+                    # [代理店ランク] は表示名で比較
+                    elif field == 'agency_master_rank':
+                        before_str = constants.AGENCY_RANK_MAP.get(int(before_val) if str(before_val).isdigit() else before_val, '未設定')
+                        after_str = constants.AGENCY_RANK_MAP.get(int(after_val) if str(after_val).isdigit() else after_val, '未設定')
+                    # ▲▲▲【ここまで追加】▲▲▲
 
                     # [上記以外] のフィールドは単純な文字列として比較
                     else:
@@ -418,12 +429,15 @@ def agency_master_edit(agency_master_code):
             if value is None:
                 agency_data[key] = ''
 
+        agency_rank_list = [{'value': key, 'label': value} for key, value in constants.AGENCY_RANK_MAP.items()]
+
         return render_template("masters/agency_master_form.html",
                                mode="edit",
                                form_data=agency_data,
                                button_config=button_config,
                                agreement_versions=constants.AGREEMENT_VERSION_MAP,
-                               registration_status=constants.registration_status_MAP)
+                               registration_status=constants.registration_status_MAP,
+                               agency_rank_list=agency_rank_list)
     finally:
         if conn and conn.open: conn.close()
 

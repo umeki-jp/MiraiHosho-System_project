@@ -72,7 +72,7 @@
 </div>
 
 <div class="form-section">
-    <h3 class="form-section-title">契約・ランク情報</h3>
+    <h3 class="form-section-title">契約情報</h3>
     <div class="row">
         <label for="contract_version" class="col-sm-2 col-form-label">契約書ver</label>
         <div class="col-sm-10">
@@ -91,20 +91,83 @@
             <input type="date" name="contract_date" id="contract_date" class="form-control" style="max-width: 12em;" value="{{ form_data.contract_date or '' }}">
         </div>
     </div>
-    <div class="row">
-        <label for="agency_master_rank" class="col-sm-2 col-form-label">代理店ランク</label>
-        <div class="col-sm-10">
-            <input type="text" name="agency_master_rank" id="agency_master_rank" class="form-control" style="max-width: 10em;" value="{{ form_data.agency_master_rank or '' }}">
-        </div>
-    </div>
-    <div class="row">
-        <label for="agency_master_rankdetails" class="col-sm-2 col-form-label">ランク詳細</label>
-        <div class="col-sm-10">
-            <input type="text" name="agency_master_rankdetails" id="agency_master_rankdetails" class="form-control" value="{{ form_data.agency_master_rankdetails or '' }}">
-        </div>
-    </div>
 </div>
 
+<div class="form-section">
+    <h3 class="form-section-title">実績</h3>
+    <div class="row">
+        <label for="application_count" class="col-sm-2 col-form-label">申込数</label>
+        <div class="col-sm-10">
+            <input type="number" name="application_count" id="application_count" class="form-control" style="max-width: 15em;" value="{{ form_data.application_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="contract_count" class="col-sm-2 col-form-label">成約数</label>
+        <div class="col-sm-10">
+            <input type="number" name="contract_count" id="contract_count" class="form-control" style="max-width: 15em;" value="{{ form_data.contract_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="contract_rate" class="col-sm-2 col-form-label">成約率</label>
+        <div class="col-sm-10">
+            <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="contract_rate" id="contract_rate" class="form-control" value="{{ form_data.contract_rate or '' }}" step="0.01" placeholder="例: 50.25">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="approval_count" class="col-sm-2 col-form-label">承認数</label>
+        <div class="col-sm-10">
+            <input type="number" name="approval_count" id="approval_count" class="form-control" style="max-width: 15em;" value="{{ form_data.approval_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="approval_rate" class="col-sm-2 col-form-label">承認率</label>
+        <div class="col-sm-10">
+             <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="approval_rate" id="approval_rate" class="form-control" value="{{ form_data.approval_rate or '' }}" step="0.01" placeholder="例: 98.50">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="total_contracts" class="col-sm-2 col-form-label">累計契約数</label>
+        <div class="col-sm-10">
+            <input type="number" name="total_contracts" id="total_contracts" class="form-control" style="max-width: 15em;" value="{{ form_data.total_contracts or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="overdue_count" class="col-sm-2 col-form-label">延滞数</label>
+        <div class="col-sm-10">
+            <input type="number" name="overdue_count" id="overdue_count" class="form-control" style="max-width: 15em;" value="{{ form_data.overdue_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="overdue_rate" class="col-sm-2 col-form-label">延滞率</label>
+        <div class="col-sm-10">
+            <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="overdue_rate" id="overdue_rate" class="form-control" value="{{ form_data.overdue_rate or '' }}" step="0.01" placeholder="例: 1.25">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+      <label for="agency_master_rank" class="col-sm-2 col-form-label">代理店ランク</label>
+      <div class="col-sm-10" style="display: flex; gap: 8px; align-items: center;">
+        <select name="agency_master_rank" id="agency_master_rank" class="form-select" style="max-width: 10em;">
+          <option value="">～選択～</option>
+          {# バックエンドから `agency_rank_list` のようなリストを渡す必要があります #}
+          {% for rank in agency_rank_list %}
+            <option value="{{ rank.value }}" {% if form_data.agency_master_rank|string == rank.value|string %}selected{% endif %}>
+              {{ rank.label }}
+            </option>
+          {% endfor %}
+        </select>
+        <input type="text" id="agency_master_rankdetails" class="form-control" name="agency_master_rankdetails" value="{{ form_data.agency_master_rankdetails or '' }}" placeholder="ランク詳細">
+      </div>
+    </div>
+</div>
 
 <div class="form-section">
   <h3 class="form-section-title">その他情報・システム情報</h3>
