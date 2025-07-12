@@ -703,6 +703,11 @@
     // 2. サイドメニューul#menu-listが空のまま→renderMenuで必ず生成
     function renderMenu(data) {
       const menuList = document.getElementById("menu-list");
+      if (!menuList) {
+      console.warn("menu-list が存在しないため、メニュー描画をスキップします");
+      return;
+    }
+
       menuList.innerHTML = ""; // ← 既存内容をクリア
 
       data.forEach(menu => {

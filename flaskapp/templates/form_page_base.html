@@ -22,3 +22,15 @@
     </div>
   </form>
 {% endblock %}
+
+{% block script %}
+    {# 親テンプレート(base.html)のスクリプトを先に読み込む #}
+    {{ super() }}
+
+    {# --- このフォームページで共通して使うJS --- #}
+    {# 1. jQuery本体を読み込む #}
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    {# 2. ★★★ 共通JSファイルである form_page_base.js を読み込む ★★★ #}
+    <script src="{{ url_for('static', filename='js/form_page_base.js') }}"></script>
+{% endblock %}

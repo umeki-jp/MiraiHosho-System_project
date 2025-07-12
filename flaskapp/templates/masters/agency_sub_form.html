@@ -1,0 +1,38 @@
+{% extends "form_page_base.html" %}
+{% set page_title = "代理店支店" + ("詳細" if mode == "edit" else "新規登録") %}
+
+{% from "shared/_form_components.html" import render_simple_flow_buttons with context %}
+
+{# ============================================================================== #}
+{# 上部ボタンセクション #}
+{# ============================================================================== #}
+{% block left_buttons %}
+  {# 支店用のボタン設定をマクロに渡す #}
+  {{ render_simple_flow_buttons(mode, form_data, button_config) }}
+{% endblock %}
+
+{# ============================================================================== #}
+{# メインコンテンツセクション #}
+{# ============================================================================== #}
+{% block main_content %}
+  {# フォームの送信先URLをモードに応じて動的に設定 #}
+  <form method="POST" id="main-form" action="{{ url_for('agency_sublist.agency_sub_edit', agency_id=form_data.agency_id) if mode == 'edit' else url_for('agency_sublist.agency_sub_new') }}">
+
+    <div class="form-wrapper">
+      {# ▼▼▼ 代理店支店用の入力欄部品を読み込む ▼▼▼ #}
+      {% include "masters/agency_sub_form_partial.html" %}
+    </div>
+
+    {# --- 下部ボタンセクション --- #}
+    <div class="form-action-btns mt-4">
+      {{ self.left_buttons() }}
+    </div>
+
+  </form>
+{% endblock %}
+
+
+{% block script %}
+  {{ super() }}
+  {# 次のステップで、本社検索用のJavaScriptをここに追加します #}
+{% endblock %}

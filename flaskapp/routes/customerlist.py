@@ -58,7 +58,12 @@ def get_field_labels():
 
 @customerlist_bp.route("/masters/customerlist")
 def show_customerlist():
-    # 検索フィルターの値を取得
+    error_message = None
+    conn = None
+    results = []
+    total = 0
+    
+    # 検索フィルターとページネーションの取得 (ここは変更なし)
     filters = {
         "customer_code": request.args.get("customer_code", "").strip(),
         "name": request.args.get("name", "").strip(),
@@ -70,52 +75,39 @@ def show_customerlist():
         "registration_date_to": request.args.get("registration_date_to", "").strip(),
     }
     has_search = any(filters.values())
-    
-    # ページネーションの設定
-    page_str = request.args.get("page", "1")
-    page = int(page_str) if page_str.isdigit() else 1
-    limit_str = request.args.get("limit", "20")
-    limit = int(limit_str) if limit_str.isdigit() else 20
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
     offset = (page - 1) * limit
-
     try:
         max_results = int(request.args.get("max_results", "100"))
     except (ValueError, TypeError):
         max_results = 100
 
-    # ▼▼▼【1. ソート情報を受け取る】▼▼▼
-    sort_by = request.args.get("sort_by")
-    sort_order = request.args.get("sort_order")
-
-    # ▼▼▼【2. 安全なORDER BY句を組み立てる】▼▼▼
-    # SQLインジェクションを防ぐため、ソート可能な列をホワイトリストで定義
+    # ソートの設定 (ここは変更なし)
+    sort_by = request.args.get("sort_by", "customer_code")
+    sort_order = request.args.get("sort_order", "desc")
     allowed_sort_columns = ['customer_code', 'name', 'name_kana', 'individual_birthdate', 'typeofcustomer', 'customer_rank', 'registration_date']
-    
-    # デフォルトのソート順
-    order_by_sql = "ORDER BY customer_code DESC" 
-    
     if sort_by in allowed_sort_columns and sort_order in ['asc', 'desc']:
         order_by_sql = f"ORDER BY {sort_by} {sort_order.upper()}"
+    else:
+        order_by_sql = "ORDER BY customer_code DESC"
 
-    # データベース接続
-    conn = get_db_connection()
-
-    if not conn:
-        # ... 接続失敗時の処理 (変更なし) ...
-        flash("データベースに接続できませんでした。管理者にお問い合わせください。", "danger")
-        return render_template(
-            "masters/customerlist.html", customers=[], total=0, page=1, limit=limit, 
-            total_pages=0, filters=filters, has_search=has_search, 
-            selected_limit=str(limit), 
-            registration_status=constants.registration_status_MAP,
-            customer_rank_map=constants.CUSTOMER_RANK_MAP,
-            selected_max_results=str(max_results)
-        )
-
-    results = []
-    total = 0
     try:
-        # 検索条件の組み立て
+        conn = get_db_connection()
+        if not conn:
+            raise Exception("データベースに接続できませんでした。")
+
+        # ▼▼▼ ここからデータベース処理を統一された方式に修正 ▼▼▼
+
+        # SQLファイルを読み込む
+        try:
+            sql_file_path = os.path.join(current_app.root_path, 'sql/customers/select_customerlist.sql')
+            with open(sql_file_path, 'r', encoding='utf-8') as f:
+                base_sql = f.read()
+        except FileNotFoundError:
+            raise Exception("SQL定義ファイル(customerlist)が見つかりません。")
+
+        # WHERE句の組み立て
         where_clauses = ["1=1"]
         params = {}
         if filters["customer_code"]:
@@ -127,14 +119,12 @@ def show_customerlist():
         if filters["name_kana"]:
             where_clauses.append("name_kana LIKE %(name_kana)s")
             params['name_kana'] = f"%{filters['name_kana']}%"
-        # ▼▼▼ 電話番号と勤務先の検索ロジックを有効化 ▼▼▼
         if filters["tel"]:
             where_clauses.append("(individual_tel1 LIKE %(tel)s OR individual_tel2 LIKE %(tel)s OR corporate_tel1 LIKE %(tel)s OR corporate_tel2 LIKE %(tel)s)")
             params['tel'] = f"%{filters['tel']}%"
         if filters["workplace"]:
             where_clauses.append("individual_workplace LIKE %(workplace)s")
             params['workplace'] = f"%{filters['workplace']}%"
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         if filters["registration_status"]:
             where_clauses.append("registration_status = %(registration_status)s")
             params['registration_status'] = filters['registration_status']
@@ -144,54 +134,49 @@ def show_customerlist():
         if filters["registration_date_to"]:
             where_clauses.append("registration_date <= %(registration_date_to)s")
             params['registration_date_to'] = filters['registration_date_to']
-        where_sql = " AND ".join(where_clauses)
         
+        where_sql = " AND ".join(where_clauses)
+
         with conn.cursor() as cursor:
-            # 総件数を取得
-            params_for_count = params.copy()
-            params_for_count['max_limit'] = max_results + 1
-            count_sql = f"SELECT COUNT(*) as total FROM ms01_customerlist WHERE {where_sql} LIMIT %(max_limit)s"
-            cursor.execute(count_sql, params_for_count)
+            # 総件数を取得 (max_results機能付き)
+            count_query_template = base_sql.replace("/*[LIMIT]*/", "").replace("/*[ORDER_BY]*/", "")
+            count_query = count_query_template.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+            # max_resultsを超えた件数を調べるため、LIMITを +1 する
+            count_sql = "SELECT COUNT(*) as total FROM (" + count_query.strip().rstrip(';') + f") AS count_table LIMIT {max_results + 1}"
+            
+            cursor.execute(count_sql, params)
             count_result = cursor.fetchone()['total'] or 0
 
             if count_result > max_results:
                 total = max_results
-                flash(f"検索結果が{max_results}件を超えました。最初の{max_results}件を表示します。条件を絞り込んでください。", "warning")
+                flash(f"検索結果が{max_results}件を超えました。最初の{max_results}件に関するページネーションを表示します。条件を絞り込んでください。", "warning")
             else:
                 total = count_result
 
+            # 本体データを取得
             if total > 0:
                 params_with_limit = params.copy()
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
                 
-                # .sqlファイルを読み込む処理
-                try:
-                    # 1. アプリケーションの基準パスとファイルへのパスを安全に結合
-                    sql_file_path = os.path.join(current_app.root_path, 'sql/customers/select_customerlist.sql')
-                    
-                    # 2. 結合して作った絶対パスを使ってファイルを開く
-                    with open(sql_file_path, 'r', encoding='utf-8') as f:
-                        base_sql = f.read()
-                except FileNotFoundError:
-                    flash("SQL定義ファイルが見つかりません。管理者にご連絡ください。", "danger")
-                    return redirect(url_for('main.index'))
-
-                # 読み込んだベースSQLに、動的な条件を結合する
-                sql = f"{base_sql.strip().rstrip(';')} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
+                main_sql = base_sql.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+                main_sql = main_sql.replace("/*[ORDER_BY]*/", order_by_sql)
+                main_sql = main_sql.replace("/*[LIMIT]*/", "LIMIT %(limit)s OFFSET %(offset)s")
                 
-                cursor.execute(sql, params_with_limit)
+                cursor.execute(main_sql, params_with_limit)
                 results = cursor.fetchall()
+
     except Exception as e:
-        flash(f"データの取得中にエラーが発生しました: {e}", "danger")
-        total = 0
+        error_message = f"処理中にエラーが発生しました: {e}"
+        flash(error_message, "danger")
         results = []
+        total = 0
     finally:
         if conn:
             conn.close()
-            
-    total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
+    total_pages = (total + limit - 1) // limit if total > 0 else 0
+    
     return render_template(
         "masters/customerlist.html",
         customers=results, 
@@ -205,11 +190,11 @@ def show_customerlist():
         registration_status=constants.registration_status_MAP,
         customer_rank_map=constants.CUSTOMER_RANK_MAP,
         selected_max_results=str(max_results),
-        # ▼▼▼【4. ソート状態をテンプレートに渡す】▼▼▼
         sort_by=sort_by,
-        sort_order=sort_order
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        sort_order=sort_order,
+        error_message=error_message
     )
+    
 # ==============================================================================
 # 新規顧客の登録・登録申請機能
 # ==============================================================================

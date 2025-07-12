@@ -111,11 +111,23 @@
                 {% for a in agencies %}
                     <tr>
                         <td class="col-select">
-                            <a href="{{ url_for('agency_masterlist.agency_master_edit', agency_master_code=a.agency_master_code) }}"
-                            class="select-link"
-                            onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
-                            選択
-                        </a>
+                            {# ▼▼▼ contextの値に応じてボタンの動作を分岐 ▼▼▼ #}
+                            {% if context == 'popup' %}
+                                {# ポップアップとして開かれた場合 (データを親画面に渡す) #}
+                                <a href="javascript:void(0);" 
+                                  class="select-link"
+                                  onclick="selectAndClose('{{ a.agency_master_code }}', '{{ a.agency_master_name }}')">
+                                    選択
+                                </a>
+                            {% else %}
+                                {# 通常のページとして開かれた場合 (編集フォームを開く) #}
+                                <a href="{{ url_for('agency_masterlist.agency_master_edit', agency_master_code=a.agency_master_code) }}"
+                                  class="select-link"
+                                  onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                                    選択
+                                </a>
+                            {% endif %}
+                                {# 選択リンク #}
                         </td>
                         <td class="col-code">{{ a.agency_master_code or '' }}</td>
                         <td class="col-customer">{{ a.agency_master_name or '' }}</td>
@@ -135,4 +147,19 @@
         </tbody>
     </table>
   </div>
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+function selectAndClose(code, name) {
+    // 親ウィンドウに関数が存在するか確認
+    if (window.opener && !window.opener.closed && typeof window.opener.selectAgencyMaster === 'function') {
+        // 親ウィンドウの selectAgencyMaster 関数を呼び出して、データを渡す
+        window.opener.selectAgencyMaster(code, name);
+    }
+    // ポップアップウィンドウを閉じる
+    window.close();
+}
+</script>
 {% endblock %}

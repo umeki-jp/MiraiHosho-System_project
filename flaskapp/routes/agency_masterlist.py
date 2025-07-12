@@ -166,6 +166,7 @@ def show_agency_masterlist():
             
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
+    context = request.args.get("context", "standalone")
     return render_template(
         "masters/agency_masterlist.html",
         agencies=results,
@@ -177,7 +178,8 @@ def show_agency_masterlist():
         agreement_versions=constants.AGREEMENT_VERSION_MAP,
         registration_status=constants.registration_status_MAP,
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
+        context=context
     )
 
 # ==============================================================================

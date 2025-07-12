@@ -1,0 +1,208 @@
+<div class="form-section">
+  <h3 class="form-section-title">基本情報</h3>
+
+  {# --- ① 代理店支店コード --- #}
+  <div class="row">
+    <label class="col-sm-2 col-form-label">代理店支店コード</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" readonly style="background: #f0f0f0; max-width: 15em;" value="{{ form_data.agency_code or '(新規登録時に自動採番)' }}">
+    </div>
+  </div>
+
+  {# --- ② 代理店本社コード（検索ボタン付き） --- #}
+  <div class="row">
+    <label for="agency_master_code_display" class="col-sm-2 col-form-label">代理店本社コード <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+        <div class="input-group" style="max-width: 40em;">
+            <input type="text" class="form-control" id="agency_master_code_display" value="{{ form_data.agency_master_code or '' }}" placeholder="「検索」ボタンから親となる本社を選択" readonly>
+            <button class="btn btn-outline-secondary" type="button" id="searchMasterBtn">検索</button>
+        </div>
+        {# 選択された本社のコードを裏で保持する #}
+        <input type="hidden" name="agency_master_code" id="agency_master_code" value="{{ form_data.agency_master_code or '' }}">
+    </div>
+  </div>
+  
+  {# --- ③ 代理店本社名 --- #}
+  <div class="row">
+      <label class="col-sm-2 col-form-label">代理店本社名</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" id="agency_master_name" value="{{ form_data.agency_master_name or '' }}" readonly style="background: #f0f0f0; max-width: 40em;">
+      </div>
+  </div>
+
+  {# --- 既存支店リスト（JSで後ほど表示） --- #}
+  <div class="row">
+    <label class="col-sm-2 col-form-label">既存の支店</label>
+    <div class="col-sm-10">
+        <div id="existing-branches-list" class="form-control" style="min-height: 50px; background: #f0f0f0;">
+            {# 本社を選択すると、ここに既存の支店名がリスト表示されます #}
+        </div>
+    </div>
+  </div>
+
+  {# --- ④ 代理店支店名 --- #}
+  <div class="row">
+    <label for="sub_name" class="col-sm-2 col-form-label">代理店支店名 <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+      <input type="text" name="sub_name" id="sub_name" class="form-control" style="max-width: 40em;" required value="{{ form_data.sub_name or '' }}" maxlength="100">
+    </div>
+  </div>
+
+  {# --- ⑤ 代理店支店名カナ --- #}
+  <div class="row">
+    <label for="sub_name_kana" class="col-sm-2 col-form-label">代理店支店名カナ</label>
+    <div class="col-sm-10">
+        <input type="text" name="sub_name_kana" id="sub_name_kana" class="form-control" style="max-width: 40em;" value="{{ form_data.sub_name_kana or '' }}" maxlength="100" placeholder="半角カナ入力">
+    </div>
+  </div>
+</div>
+
+<div class="form-section">
+    <h3 class="form-section-title">所在地・連絡先</h3>
+    <div class="row">
+        <label class="col-sm-2 col-form-label">住所</label>
+        <div class="col-sm-10">
+          <div class="address-lookup-group">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <input type="text" name="agencysub_postal_code" id="agencysub_postal_code" class="form-control postal-code-input" placeholder="郵便番号" style="max-width: 10em;" value="{{ form_data.agencysub_postal_code or '' }}" maxlength="8">
+              <button class="btn btn-outline-secondary btn-sm address-search-btn" type="button">住所検索</button>
+            </div>
+            <div class="d-flex gap-2 mb-2">
+              <input type="text" name="agencysub_prefecture" id="agencysub_prefecture" class="form-control prefecture-output" placeholder="都道府県" style="max-width: 10em;" value="{{ form_data.agencysub_prefecture or '' }}" maxlength="10">
+              <input type="text" name="agencysub_city" id="agencysub_city" class="form-control city-output" placeholder="市区町村" style="max-width: 20em;" value="{{ form_data.agencysub_city or '' }}" maxlength="50">
+            </div>
+            <div class="mb-2">
+                <input type="text" name="agencysub_address" id="agencysub_address" class="form-control town-output" placeholder="番地・建物名(全角入力)" value="{{ form_data.agencysub_address or '' }}" maxlength="100">
+            </div>
+          </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="agencysub_tel" class="col-sm-2 col-form-label">電話番号</label>
+        <div class="col-sm-10">
+            <input type="tel" name="agencysub_tel" id="agencysub_tel" class="form-control" style="max-width: 20em;" value="{{ form_data.agencysub_tel or '' }}" maxlength="20">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agencysub_fax" class="col-sm-2 col-form-label">FAX</label>
+        <div class="col-sm-10">
+            <input type="tel" name="agencysub_fax" id="agencysub_fax" class="form-control" style="max-width: 20em;" value="{{ form_data.agencysub_fax or '' }}" maxlength="20">
+        </div>
+    </div>
+    <div class="row">
+        <label for="agencysub_mail" class="col-sm-2 col-form-label">メールアドレス</label>
+        <div class="col-sm-10">
+            <input type="email" name="agencysub_mail" id="agencysub_mail" class="form-control" style="max-width: 30em;" value="{{ form_data.agencysub_mail or '' }}" maxlength="255">
+        </div>
+    </div>
+</div>
+
+{# --- 契約情報のセクションは支店にないため削除 --- #}
+
+<div class="form-section">
+    <h3 class="form-section-title">実績</h3>
+    <div class="row">
+        <label for="application_count" class="col-sm-2 col-form-label">申込数</label>
+        <div class="col-sm-10">
+            <input type="number" name="application_count" id="application_count" class="form-control" style="max-width: 15em;" value="{{ form_data.application_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="contract_count" class="col-sm-2 col-form-label">成約数</label>
+        <div class="col-sm-10">
+            <input type="number" name="contract_count" id="contract_count" class="form-control" style="max-width: 15em;" value="{{ form_data.contract_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="contract_rate" class="col-sm-2 col-form-label">成約率</label>
+        <div class="col-sm-10">
+            <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="contract_rate" id="contract_rate" class="form-control" value="{{ form_data.contract_rate or '' }}" step="0.01" placeholder="例: 50.25">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="approval_count" class="col-sm-2 col-form-label">承認数</label>
+        <div class="col-sm-10">
+            <input type="number" name="approval_count" id="approval_count" class="form-control" style="max-width: 15em;" value="{{ form_data.approval_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="approval_rate" class="col-sm-2 col-form-label">承認率</label>
+        <div class="col-sm-10">
+             <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="approval_rate" id="approval_rate" class="form-control" value="{{ form_data.approval_rate or '' }}" step="0.01" placeholder="例: 98.50">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="total_contracts" class="col-sm-2 col-form-label">累計契約数</label>
+        <div class="col-sm-10">
+            <input type="number" name="total_contracts" id="total_contracts" class="form-control" style="max-width: 15em;" value="{{ form_data.total_contracts or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="overdue_count" class="col-sm-2 col-form-label">延滞数</label>
+        <div class="col-sm-10">
+            <input type="number" name="overdue_count" id="overdue_count" class="form-control" style="max-width: 15em;" value="{{ form_data.overdue_count or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <label for="overdue_rate" class="col-sm-2 col-form-label">延滞率</label>
+        <div class="col-sm-10">
+            <div class="input-group" style="max-width: 15em;">
+                <input type="number" name="overdue_rate" id="overdue_rate" class="form-control" value="{{ form_data.overdue_rate or '' }}" step="0.01" placeholder="例: 1.25">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+      <label for="agency_sub_rank" class="col-sm-2 col-form-label">代理店ランク</label>
+      <div class="col-sm-10" style="display: flex; gap: 8px; align-items: center;">
+        <select name="agency_sub_rank" id="agency_sub_rank" class="form-select" style="max-width: 10em;">
+          <option value="">～選択～</option>
+          {% for rank in agency_rank_list %}
+            <option value="{{ rank.value }}" {% if form_data.agency_sub_rank|string == rank.value|string %}selected{% endif %}>
+              {{ rank.label }}
+            </option>
+          {% endfor %}
+        </select>
+        <input type="text" id="rankdetails" class="form-control" name="rankdetails" value="{{ form_data.rankdetails or '' }}" placeholder="ランク詳細">
+      </div>
+    </div>
+</div>
+
+<div class="form-section">
+  <h3 class="form-section-title">その他情報・システム情報</h3>
+  <div class="row">
+    <label class="col-sm-2 col-form-label">登録状況</label>
+    <div class="col-sm-10">
+      <div class="form-control" style="background: #f0f0f0; max-width: 10em;">{{ registration_status[form_data.registration_status] or '未定義' }}</div>
+      <input type="hidden" name="registration_status" value="{{ form_data.registration_status or 0 }}">
+    </div>
+  </div>
+  <div class="row">
+    <label for="remarks" class="col-sm-2 col-form-label">備考</label>
+    <div class="col-sm-10">
+      <textarea name="remarks" id="remarks" class="form-control" rows="4">{{ form_data.remarks or '' }}</textarea>
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">登録情報</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="registration_date" class="form-control" value="{{ form_data.registration_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="registration_shain" class="form-control" value="{{ form_data.registration_shain or '' }}" placeholder="登録者" readonly tabindex="-1">
+    </div>
+  </div>
+
+  <div class="row">
+    <label class="col-sm-2 col-form-label">更新情報</label>
+    <div class="col-sm-10 d-flex align-items-center gap-2">
+      <input type="datetime-local" name="update_date" class="form-control" value="{{ form_data.update_date or '' }}" readonly tabindex="-1">
+      <input type="text" name="update_shain" class="form-control" value="{{ form_data.update_shain or '' }}" placeholder="更新者" readonly tabindex="-1">
+    </div>
+  </div>
+</div>

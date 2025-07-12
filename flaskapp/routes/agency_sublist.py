@@ -298,3 +298,211 @@ def agency_sub_new():
                                button_config=button_config)
     finally:
         if conn and conn.open: conn.close()
+        
+# ==============================================================================
+# 代理店支店の編集・更新・削除機能
+# ==============================================================================
+@agency_sublist_bp.route("/masters/agency_sub/<int:agency_id>", methods=["GET", "POST"])
+def agency_sub_edit(agency_id):
+    conn = get_db_connection()
+    try:
+        user_role = session.get('role', 0)
+        button_config = {
+            "show_instant_update": False,
+            "show_instant_delete": False,
+        }
+        if user_role in [1, 3]:  # 1:システム管理者, 3:社員A
+            button_config["show_instant_update"] = True
+            button_config["show_instant_delete"] = True
+        elif user_role == 4:  # 4:社員B
+            button_config["show_instant_update"] = True
+
+        # --- POSTリクエスト (更新・削除処理) ---
+        if request.method == "POST":
+            action = request.form.get("action")
+            if (action in ["update_instant", "submit_update_instant"] and not button_config.get("show_instant_update")) or \
+               (action == "delete_instant" and not button_config.get("show_instant_delete")):
+                flash("この操作を行う権限がありません。", "danger")
+                return redirect(url_for("agency_sublist.show_agency_sublist"))
+
+            field_names = get_agency_sub_fields()
+
+            # --- 更新ボタン押下時 (確認画面へ) ---
+            if action == "update_instant":
+                form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM ms04_agency_sublist WHERE agency_id = %s", (agency_id,))
+                    before_data = cursor.fetchone()
+
+                if not before_data:
+                    flash("更新対象のデータが見つかりません。", "error")
+                    return redirect(url_for('agency_sublist.show_agency_sublist'))
+
+                changes = []
+                field_labels = get_agency_sub_field_labels()
+
+                for field in field_names:
+                    before_val = before_data.get(field, '')
+                    after_val = form_data.get(field, '')
+                    
+                    if str(before_val or '') != str(after_val or ''):
+                        changes.append({
+                            "label": field_labels.get(field, field),
+                            "before": str(before_val or ''),
+                            "after": str(after_val or '')
+                        })
+                
+                if not changes:
+                    flash("変更された項目がありません。", "info")
+                    return redirect(url_for("agency_sublist.agency_sub_edit", agency_id=agency_id))
+                
+                return render_template("shared/update_confirm.html",
+                                       changes=changes,
+                                       form_data=form_data,
+                                       changes_json=json.dumps(changes),
+                                       submit_url=url_for('agency_sublist.agency_sub_edit', agency_id=agency_id),
+                                       is_approval_flow=False,
+                                       final_action_value="submit_update_instant")
+
+            # --- 確認画面で承認後、最終更新実行 ---
+            elif action == "submit_update_instant":
+                form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                form_data['update_shain'] = session.get('shain_name', 'UNKNOWN')
+                form_data['update_date'] = datetime.datetime.now()
+
+                update_values = [form_data.get(f) or None for f in field_names]
+                update_values.append(agency_id)
+                
+                update_clause = ", ".join(f"`{col}` = %s" for col in field_names)
+                sql = f"UPDATE ms04_agency_sublist SET {update_clause} WHERE agency_id = %s"
+                
+                with conn.cursor() as cursor:
+                    cursor.execute(sql, update_values)
+                    conn.commit()
+
+                log_action(
+                    target_type=6,  # 6: 代理店支店マスタ
+                    target_id=agency_id,
+                    action_source=2,
+                    action_type=2,  # 2: 更新
+                    action_details=json.loads(request.form.get('changes_json', '[]'))
+                )
+                return render_template("shared/action_done.html", action_label="更新")
+
+            # --- 削除ボタン押下時 (確認画面へ) ---
+            elif action == "delete_instant":
+                # 削除対象の支店名を取得
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT sub_name FROM ms04_agency_sublist WHERE agency_id = %s", (agency_id,))
+                    sub_name = cursor.fetchone()['sub_name']
+
+                message = f"本当に代理店支店「{sub_name}」を削除しますか？"
+                return render_template("shared/delete_confirm.html",
+                                       message=message,
+                                       deletable=True, # 関連データがないので常に削除可能
+                                       submit_url=url_for('agency_sublist.agency_sub_delete_confirmed', agency_id=agency_id),
+                                       is_approval_flow=False,
+                                       final_action_value="submit_delete_instant")
+
+        # --- GETリクエスト (詳細表示) ---
+        with conn.cursor() as cursor:
+            # 支店情報と、紐づく本社名も一緒に取得
+            sql = """
+                SELECT sub.*, mas.agency_master_name 
+                FROM ms04_agency_sublist AS sub
+                LEFT JOIN ms03_agency_masterlist AS mas ON sub.agency_master_code = mas.agency_master_code
+                WHERE sub.agency_id = %s
+            """
+            cursor.execute(sql, (agency_id,))
+            agency_data = cursor.fetchone()
+
+        if not agency_data:
+            flash("指定された代理店支店が見つかりませんでした。", "error")
+            return redirect(url_for("agency_sublist.show_agency_sublist"))
+
+        # 日付/日時フィールドをHTMLのinputが解釈できる形式に変換
+        date_fields = {"registration_date": '%Y-%m-%dT%H:%M', "update_date": '%Y-%m-%dT%H:%M'}
+        for field, fmt in date_fields.items():
+            if agency_data.get(field) and isinstance(agency_data[field], datetime.datetime):
+                agency_data[field] = agency_data[field].strftime(fmt)
+        
+        for key, value in agency_data.items():
+            if value is None: agency_data[key] = ''
+
+        agency_rank_list = [{'value': key, 'label': value} for key, value in constants.AGENCY_RANK_MAP.items()]
+
+        return render_template("masters/agency_sub_form.html",
+                               mode="edit",
+                               form_data=agency_data,
+                               button_config=button_config,
+                               agency_rank_list=agency_rank_list)
+    finally:
+        if conn and conn.open: conn.close()
+
+# ==============================================================================
+# 代理店支店の削除実行
+# ==============================================================================
+@agency_sublist_bp.route("/masters/agency_sub/delete/<int:agency_id>", methods=["POST"])
+def agency_sub_delete_confirmed(agency_id):
+    conn = get_db_connection()
+    try:
+        if request.form.get("action") == "submit_delete_instant":
+            with conn.cursor() as cursor:
+                # ログ用に削除前のデータを取得
+                cursor.execute("SELECT * FROM ms04_agency_sublist WHERE agency_id = %s", (agency_id,))
+                deleted_data = cursor.fetchone()
+                
+                # 削除実行
+                cursor.execute("DELETE FROM ms04_agency_sublist WHERE agency_id = %s", (agency_id,))
+                conn.commit()
+
+                # ログ記録
+                if deleted_data:
+                    # 日付/日時データを文字列に変換
+                    for key, value in deleted_data.items():
+                        if isinstance(value, (datetime.date, datetime.datetime)):
+                                deleted_data[key] = value.isoformat()
+                    
+                    log_action(
+                        target_type=6,  # 6: 代理店支店マスタ
+                        target_id=agency_id,
+                        action_source=2,
+                        action_type=3,  # 3: 削除
+                        action_details={'deleted_data': deleted_data}
+                    )
+                    
+            return render_template("shared/action_done.html", action_label="削除")
+            
+    except Exception as e:
+        flash(f"処理中にエラーが発生しました: {e}", "error")
+    finally:
+        if conn and conn.open: conn.close()
+        
+    return redirect(url_for('agency_sublist.show_agency_sublist'))
+
+# ==============================================================================
+# API: 代理店本社コードに紐づく支店リストを返す
+# ==============================================================================
+@agency_sublist_bp.route("/api/get_branches/<string:master_code>")
+def get_branches_by_master_code(master_code):
+    """指定された本社コードに紐づく支店のリストをJSONで返す"""
+    conn = get_db_connection()
+    branches = []
+    try:
+        with conn.cursor() as cursor:
+            # 必要な支店コードと支店名のみを取得
+            sql = "SELECT sub_code, sub_name FROM ms04_agency_sublist WHERE agency_master_code = %s ORDER BY sub_code ASC"
+            cursor.execute(sql, (master_code,))
+            branches = cursor.fetchall()
+        
+        # 取得したデータをJSON形式で返す
+        return json.dumps(branches, ensure_ascii=False)
+
+    except Exception as e:
+        # エラーが発生した場合は、500エラーとエラーメッセージを返す
+        print(f"API Error in get_branches_by_master_code: {e}")
+        return json.dumps({"error": "Failed to fetch branches"}), 500
+    finally:
+        if conn and conn.open:
+            conn.close()
