@@ -156,9 +156,16 @@ def show_agency_masterlist():
 def agency_master_new():
     conn = get_db_connection()
     try:
-        button_config = {'show_instant_register': True}
+        user_role = session.get('role', 0)
+        button_config = {}
+        # システム管理者、社員A, B の場合に「登録」ボタンを表示
+        if user_role in [1, 3, 4]:
+            button_config["show_instant_register"] = True
 
         if request.method == "POST":
+            if not button_config.get("show_instant_register"):
+                flash("この操作を行う権限がありません。", "danger")
+                return redirect(url_for("agency_masterlist.show_agency_masterlist"))
             field_names = get_agency_master_fields()
             form_data = {f: request.form.get(f, "").strip() for f in field_names}
             
@@ -196,6 +203,14 @@ def agency_master_new():
                 
                 cursor.execute(sql_insert, values)
                 conn.commit()
+                
+                log_action(
+                    target_type=5,  # 5: 代理店本社マスタ (※要定義)
+                    target_id=agency_master_code,
+                    action_source=2, # 2: ユーザー操作
+                    action_type=1,  # 1: 登録
+                    action_details={'message': f'代理店本社 {agency_master_code} が新規登録されました。'}
+                )
 
             flash(f"代理店本社コード {agency_master_code} で登録しました。", "success")
             return redirect(url_for("agency_masterlist.agency_master_edit", agency_master_code=agency_master_code))
@@ -217,80 +232,130 @@ def agency_master_new():
 def agency_master_edit(agency_master_code):
     conn = get_db_connection()
     try:
-        button_config = {"show_instant_update": True, "show_instant_delete": True}
+        user_role = session.get('role', 0) # デフォルトは0 (権限なし)
+
+        # デフォルトでは全ての操作ボタンを非表示（閲覧のみ）
+        button_config = {
+            "show_instant_update": False,
+            "show_instant_delete": False,
+        }
+
+        # ロールに基づいてボタンの表示を決定 (customerlist.pyに準拠)
+        if user_role in [1, 3]:  # 1:システム管理者, 3:社員A
+            button_config["show_instant_update"] = True
+            button_config["show_instant_delete"] = True
+        elif user_role == 4:  # 4:社員B
+            button_config["show_instant_update"] = True
 
         if request.method == "POST":
             action = request.form.get("action")
+            if action in ["update_instant", "submit_update_instant"] and not button_config.get("show_instant_update"):
+                flash("この操作を行う権限がありません。", "danger")
+                return redirect(url_for("agency_masterlist.show_agency_masterlist"))
+            if action in ["delete_instant"] and not button_config.get("show_instant_delete"):
+                flash("この操作を行う権限がありません。", "danger")
+                return redirect(url_for("agency_masterlist.show_agency_masterlist"))
             field_names = get_agency_master_fields()
 
             if action == "update_instant":
+                # フォームから送信されたデータを取得
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
+                
+                # 変更前のデータをDBから取得
                 with conn.cursor() as cursor:
                     cursor.execute("SELECT * FROM ms03_agency_masterlist WHERE agency_master_code = %s", (agency_master_code,))
                     before_data = cursor.fetchone()
 
+                # データが存在しない場合はエラー
                 if not before_data:
                     flash("更新対象のデータが見つかりません。", "error")
                     return redirect(url_for('agency_masterlist.show_agency_masterlist'))
 
+                # 変更点を格納するリストを初期化
                 changes = []
                 field_labels = get_agency_master_field_labels()
+
+                # 全てのフィールドをループして変更点をチェック
                 for field in field_names:
-                    before_val = before_data.get(field, '')
-                    after_val = form_data.get(field, '')
-                    
-                    # 両方の値を、比較しやすいように一度文字列に変換
-                    before_str = str(before_val or '')
+                    before_val = before_data.get(field)
+                    after_val = form_data.get(field, "")
+
+                    # 比較用の文字列を初期化
+                    before_str = ""
                     after_str = str(after_val or '')
 
-                    # 'contract_version' の場合、特別に数値として比較する
-                    if field == 'contract_version':
-                        # 空文字やNoneを0として扱う
-                        before_int = int(before_val or 0)
-                        after_int = int(after_val or 0)
-                        if before_int == after_int:
-                            continue # 数値が同じなら、変更なしとして次のループへ
-
-                    # 日付の場合、フォーマットを揃えてから比較する
-                    elif field in ["registration_date", "update_date", "contract_date"]:
+                    # --- 1. フィールドの種類に応じて、比較用の文字列を整形 ---
+                    # [契約日] は日付(YYYY-MM-DD)の部分だけを比較
+                    if field == 'contract_date':
+                        if isinstance(before_val, (datetime.date, datetime.datetime)):
+                            before_str = before_val.strftime('%Y-%m-%d')
+                    
+                    # [登録日/更新日] は日時(YYYY-MM-DDTHH:MM)で比較
+                    elif field in ["registration_date", "update_date"]:
                         if isinstance(before_val, datetime.datetime):
                             before_str = before_val.strftime('%Y-%m-%dT%H:%M')
-                        elif isinstance(before_val, datetime.date):
-                            before_str = before_val.strftime('%Y-%m-%d')
 
-                    # 契約書バージョンのようなMAPを使う項目は、表示名で比較
-                    if field == 'contract_version':
+                    # [契約書ver] は表示名で比較
+                    elif field == 'contract_version':
                         before_str = constants.AGREEMENT_VERSION_MAP.get(int(before_val) if str(before_val).isdigit() else before_val, '未設定')
                         after_str = constants.AGREEMENT_VERSION_MAP.get(int(after_val) if str(after_val).isdigit() else after_val, '未設定')
 
-                    # 比較前に日付フォーマットを統一する
-                    if field in ["registration_date", "update_date", "contract_date"]:
-                        if isinstance(before_val, datetime.datetime):
-                            # datetime型は 'YYYY-MM-DDTHH:MM' 形式に
-                            before_str = before_val.strftime('%Y-%m-%dT%H:%M')
-                        elif isinstance(before_val, datetime.date):
-                             # date型は 'YYYY-MM-DD' 形式に
-                            before_str = before_val.strftime('%Y-%m-%d')
+                    # [上記以外] のフィールドは単純な文字列として比較
                     else:
                         before_str = str(before_val or '')
 
+                    # --- 2. 整形後の文字列を比較して、異なれば変更リストに追加 ---
                     if before_str != after_str:
-                        changes.append({"label": field_labels.get(field, field), "before": before_str, "after": after_str})
+                        changes.append({
+                            "label": field_labels.get(field, field), 
+                            "before": before_str, 
+                            "after": after_str
+                        })
 
+                # 変更が一つもなければ、メッセージを表示して編集画面に戻る
                 if not changes:
                     flash("変更された項目がありません。", "info")
                     return redirect(url_for("agency_masterlist.agency_master_edit", agency_master_code=agency_master_code))
                 
+                # 変更点があれば、確認画面を表示
                 return render_template("shared/update_confirm.html",
-                                       changes=changes, form_data=form_data,
+                                       changes=changes, 
+                                       form_data=form_data,
+                                       changes_json=json.dumps(changes), 
                                        submit_url=url_for('agency_masterlist.agency_master_edit', agency_master_code=agency_master_code),
-                                       is_approval_flow=False, final_action_value="submit_update_instant")
+                                       is_approval_flow=False, 
+                                       final_action_value="submit_update_instant")
 
             elif action == "submit_update_instant":
                 form_data = {f: request.form.get(f, "").strip() for f in field_names}
                 form_data['update_shain'] = session.get('shain_name', 'UNKNOWN')
                 form_data['update_date'] = datetime.datetime.now()
                 form_data['registration_status'] = 1
+
+                # フォームから来た日付文字列(YYYY-MM-DD)をDB保存形式に整える
+                # contract_dateが空文字やNoneでなく、有効な日付形式の場合のみ変換を試みる
+                contract_date_str = form_data.get("contract_date")
+                if contract_date_str:
+                    try:
+                        # YYYY-MM-DD形式の文字列をdatetimeオブジェクトに変換
+                        date_obj = datetime.datetime.strptime(contract_date_str, '%Y-%m-%d')
+                        # DB保存用に再度 YYYY-MM-DD 形式の文字列にする（DATE型カラムの場合）
+                        form_data["contract_date"] = date_obj.strftime('%Y-%m-%d')
+                    except ValueError:
+                        # 無効な日付形式の場合はNone（NULL）として扱う
+                        form_data["contract_date"] = None
+                else:
+                    # 入力が空の場合もNone（NULL）をセット
+                    form_data["contract_date"] = None
+
+                # 登録日・更新日はdatetime-localからの値を変換する
+                for field in ["registration_date", "update_date"]:
+                    date_str = form_data.get(field)
+                    if date_str and isinstance(date_str, str): # 文字列の場合のみ変換
+                        try:
+                            form_data[field] = datetime.datetime.strptime(date_str.replace('T', ' '), '%Y-%m-%d %H:%M')
+                        except (ValueError, AttributeError):
+                            form_data[field] = None # 変換失敗時はNone
 
                 values = [form_data.get(f) or None for f in field_names]
                 values.append(agency_master_code)
@@ -301,12 +366,30 @@ def agency_master_edit(agency_master_code):
                 with conn.cursor() as cursor:
                     cursor.execute(sql, values)
                     conn.commit()
+                    
+                log_action(
+                        target_type=5,  # 5: 代理店本社マスタ (※要定義)
+                        target_id=agency_master_code,
+                        action_source=2, # 2: ユーザー操作
+                        action_type=2,  # 2: 更新
+                        action_details=json.loads(request.form.get('changes_json', '[]')) # 確認画面から変更内容を受け取る
+                    )
+                
                 return render_template("shared/action_done.html", action_label="更新")
 
             elif action == "delete_instant":
                 deletable = True
                 message = f"本当に代理店本社「{agency_master_code}」を削除しますか？"
-                # (関連チェックロジックは将来のためにコメントアウト)
+                # --- 関連データチェック（将来有効化） ---
+                # 将来、代理店支店テーブルなどができた場合、以下のコメントアウトを解除して使用します。
+                # with conn.cursor() as cursor:
+                #     # 例: ms04_agency_sublist に、この本社コードを持つ支店がないかチェック
+                #     cursor.execute("SELECT COUNT(*) as count FROM ms04_agency_sublist WHERE agency_master_code = %s", (agency_master_code,))
+                #     related_count = cursor.fetchone()['count']
+                #
+                #     if related_count > 0:
+                #         deletable = False
+                #         message = f"この代理店本社（{agency_master_code}）には {related_count} 件の支店が紐づいているため、削除できません。"
                 return render_template("shared/delete_confirm.html", message=message, deletable=deletable,
                     submit_url=url_for('agency_masterlist.agency_master_delete_confirmed', agency_master_code=agency_master_code),
                     is_approval_flow=False, final_action_value="submit_delete_instant")
@@ -320,13 +403,17 @@ def agency_master_edit(agency_master_code):
             flash("指定された代理店本社が見つかりませんでした。", "error")
             return redirect(url_for("agency_masterlist.show_agency_masterlist"))
 
-        for field in ["registration_date", "update_date", "contract_date"]:
-             if agency_data.get(field) and isinstance(agency_data.get(field), (datetime.date, datetime.datetime)):
-                if isinstance(agency_data[field], datetime.datetime):
-                    agency_data[field] = agency_data[field].strftime('%Y-%m-%dT%H:%M')
-                else: # dateオブジェクトの場合
-                    agency_data[field] = agency_data[field].strftime('%Y-%m-%d')
+        # 日付/日時フィールドをHTMLのinputが解釈できる形式に変換
+        date_fields_to_format = {
+            "contract_date": '%Y-%m-%d',         # <input type="date"> 用
+            "registration_date": '%Y-%m-%dT%H:%M', # <input type="datetime-local"> 用
+            "update_date": '%Y-%m-%dT%H:%M'      # <input type="datetime-local"> 用
+        }
+        for field, fmt in date_fields_to_format.items():
+            if agency_data.get(field) and isinstance(agency_data.get(field), (datetime.date, datetime.datetime)):
+                agency_data[field] = agency_data[field].strftime(fmt)
         
+        # None の値を空文字に変換（テンプレートでのエラー防止）
         for key, value in agency_data.items():
             if value is None:
                 agency_data[key] = ''
@@ -355,9 +442,18 @@ def agency_master_delete_confirmed(agency_master_code):
                 cursor.execute("DELETE FROM ms03_agency_masterlist WHERE agency_master_code = %s", (agency_master_code,))
                 conn.commit()
 
-                if deleted_data:
-                    # (ログ記録処理 ...)
-                    pass
+                for key, value in deleted_data.items():
+                    if isinstance(value, (datetime.date, datetime.datetime)):
+                            deleted_data[key] = value.isoformat()
+                    
+                    log_action(
+                        target_type=5,  # 5: 代理店本社マスタ (※要定義)
+                        target_id=agency_master_code,
+                        action_source=2, # 2: ユーザー操作
+                        action_type=3,  # 3: 削除
+                        action_details={'deleted_data': deleted_data}
+                    )
+                    
             return render_template("shared/action_done.html", action_label="削除")
     except Exception as e:
         flash(f"処理中にエラーが発生しました: {e}", "error")

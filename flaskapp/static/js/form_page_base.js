@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // カタカナを半角に変換する機能
 document.addEventListener('DOMContentLoaded', function () {
-  const kanaFields = ['name_kana', 'shain_kana','property_name_kana']; // 対象フィールドのIDを配列で管理
+  const kanaFields = ['name_kana', 'shain_kana','property_name_kana','agency_master_name_kana']; // 対象フィールドのIDを配列で管理
 
     kanaFields.forEach(fieldId => {
         const kanaInput = document.getElementById(fieldId);

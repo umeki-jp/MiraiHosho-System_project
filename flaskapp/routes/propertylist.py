@@ -172,7 +172,11 @@ def property_new():
     """新規物件の登録"""
     conn = get_db_connection()
     try:
-        button_config = {"show_instant_register": True} 
+        user_role = session.get('role', 0)
+        button_config = {}
+        # システム管理者、社員A, B の場合に「登録」ボタンを表示
+        if user_role in [1, 3, 4]:
+            button_config["show_instant_register"] = True
 
         if request.method == "POST":
             field_names = get_property_fields()
@@ -226,7 +230,21 @@ def property_new():
 def property_edit(property_code):
     conn = get_db_connection()
     try:
-        button_config = {"show_instant_update": True, "show_instant_delete": True}
+        # ユーザーのロールをセッションから取得
+        user_role = session.get('role', 0)
+
+        # デフォルトでは全ての操作ボタンを非表示
+        button_config = {
+            "show_instant_update": False,
+            "show_instant_delete": False,
+        }
+
+        # ロールに基づいてボタンの表示を決定
+        if user_role in [1, 3]:  # 1:システム管理者, 3:社員A
+            button_config["show_instant_update"] = True
+            button_config["show_instant_delete"] = True
+        elif user_role == 4:  # 4:社員B
+            button_config["show_instant_update"] = True
 
         if request.method == "POST":
             action = request.form.get("action")
