@@ -100,9 +100,15 @@ def show_agency_masterlist():
         if filters["agency_master_code"]:
             where_clauses.append("agency_master_code LIKE %(agency_master_code)s")
             params['agency_master_code'] = f"%{filters['agency_master_code']}%"
-        # 他のフィルター条件... (name, kana, address, etc.)
+        if filters["agency_master_name"]:
+            where_clauses.append("agency_master_name LIKE %(agency_master_name)s")
+            params['agency_master_name'] = f"%{filters['agency_master_name']}%"
+        if filters["agency_master_name_kana"]:
+            where_clauses.append("agency_master_name_kana LIKE %(agency_master_name_kana)s")
+            params['agency_master_name_kana'] = f"%{filters['agency_master_name_kana']}%"
         if filters["address"]:
-            where_clauses.append("(prefecture LIKE %(address)s OR city LIKE %(address)s OR address1 LIKE %(address)s OR address2 LIKE %(address)s)")
+            # 住所は都道府県・市区町村・番地をまとめて検索
+            where_clauses.append("(agency_master_prefecture LIKE %(address)s OR agency_master_city LIKE %(address)s OR agency_master_address LIKE %(address)s)")
             params['address'] = f"%{filters['address']}%"
         if filters["contract_version"]:
             where_clauses.append("contract_version = %(contract_version)s")
