@@ -1,6 +1,8 @@
+import os
 import datetime
 import json
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import re
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flaskapp.utils.db import get_db_connection
 from flaskapp.utils.ms01_customerlist_fields import field_names 
 from flaskapp.common import constants
@@ -165,7 +167,11 @@ def show_customerlist():
                 
                 # .sqlファイルを読み込む処理
                 try:
-                    with open('flaskapp/sql/customers/select_customerlist.sql', 'r', encoding='utf-8') as f:
+                    # 1. アプリケーションの基準パスとファイルへのパスを安全に結合
+                    sql_file_path = os.path.join(current_app.root_path, 'sql/customers/select_customerlist.sql')
+                    
+                    # 2. 結合して作った絶対パスを使ってファイルを開く
+                    with open(sql_file_path, 'r', encoding='utf-8') as f:
                         base_sql = f.read()
                 except FileNotFoundError:
                     flash("SQL定義ファイルが見つかりません。管理者にご連絡ください。", "danger")

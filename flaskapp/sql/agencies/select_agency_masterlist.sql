@@ -8,8 +8,12 @@ SELECT
   registration_date,
 
   -- ▼ 検索機能のために裏側で必要なカラム
-  prefecture,
-  city,
+  agency_master_prefecture,
+  agency_master_city,
   agency_master_address
 FROM
   ms03_agency_masterlist
+/*[WHERE]*/
+/*[ORDER_BY]*/
+/*[LIMIT]*/
+;

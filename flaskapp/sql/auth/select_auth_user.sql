@@ -11,3 +11,7 @@ FROM
   ms_auth_user AS au
 LEFT JOIN
   ms_shainlist AS ms ON au.shain_code = ms.shain_code
+/*[WHERE]*/
+/*[ORDER_BY]*/
+/*[LIMIT]*/
+;

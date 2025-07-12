@@ -6,6 +6,7 @@ from flaskapp.routes.root import root_bp
 from flaskapp.routes.customerlist import customerlist_bp
 from flaskapp.routes.propertylist import propertylist_bp
 from flaskapp.routes.agency_masterlist import agency_masterlist_bp
+from flaskapp.routes.agency_sublist import agency_sublist_bp
 from flaskapp.routes.shainlist import shainlist_bp
 from flaskapp.routes.auth_user import auth_user_bp
 from flaskapp.routes.api import api_bp
@@ -23,6 +24,7 @@ def create_app():
     app.register_blueprint(customerlist_bp)
     app.register_blueprint(propertylist_bp)
     app.register_blueprint(agency_masterlist_bp)
+    app.register_blueprint(agency_sublist_bp)
     app.register_blueprint(shainlist_bp)
     app.register_blueprint(auth_user_bp)
     app.register_blueprint(api_bp)

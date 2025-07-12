@@ -15,3 +15,7 @@ SELECT
   individual_workplace
 FROM
   ms01_customerlist
+/*[WHERE]*/
+/*[ORDER_BY]*/
+/*[LIMIT]*/
+;

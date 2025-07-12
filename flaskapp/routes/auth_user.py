@@ -1,6 +1,8 @@
+import os
 import datetime
 import json
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import re
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import generate_password_hash
 from flaskapp.utils.db import get_db_connection
 from flaskapp.common import constants
@@ -42,6 +44,11 @@ def get_auth_user_field_labels():
 @auth_user_bp.route("/auth_user")  # 認証マスタ一覧表示
 def show_auth_userlist():
     """認証マスタ一覧の表示と検索を行う"""
+    error_message = None
+    conn = None
+    results = []
+    total = 0
+
     try:
         # 検索フィルターの値を取得
         filters = {
@@ -73,76 +80,80 @@ def show_auth_userlist():
         sort_by_aliased = f"au.{sort_by}"
         if sort_by == 'shain_name':
             sort_by_aliased = f"ms.{sort_by}"
-
         order_by_sql = f"ORDER BY {sort_by_aliased} {sort_order.upper()}"
 
         conn = get_db_connection()
         if not conn:
-            error_message = "データベースに接続できませんでした。"
-            return render_template("masters/auth_user.html", auth_users=[], total=0, page=page, limit=limit, total_pages=0, filters=filters, error_message=error_message)
+            raise Exception("データベースに接続できませんでした。")
 
-        results = []
-        total = 0
+        # SQLファイルを安全に読み込む
+        try:
+            sql_file_path = os.path.join(current_app.root_path, 'sql/auth/select_auth_user.sql')
+            with open(sql_file_path, 'r', encoding='utf-8') as f:
+                base_sql = f.read()
+        except FileNotFoundError:
+            raise Exception("SQL定義ファイル(auth_user)が見つかりません。")
+
+        # 検索条件の組み立て
+        where_clauses = ["1=1"]
+        params = {}
+        if filters["user_id"]:
+            where_clauses.append("au.user_id LIKE %(user_id)s")
+            params['user_id'] = f"%{filters['user_id']}%"
+        if filters["account_id"]:
+            where_clauses.append("au.account_id LIKE %(account_id)s")
+            params['account_id'] = f"%{filters['account_id']}%"
+        if filters["shain_name"]:
+            where_clauses.append("ms.shain_name LIKE %(shain_name)s")
+            params['shain_name'] = f"%{filters['shain_name']}%"
+        if filters["role"]:
+            where_clauses.append("au.role = %(role)s")
+            params['role'] = filters['role']
+        if filters["login_enabled"]:
+            where_clauses.append("au.login_enabled = %(login_enabled)s")
+            params['login_enabled'] = filters['login_enabled']
+        if filters["registration_date_from"]:
+            where_clauses.append("au.registration_date >= %(registration_date_from)s")
+            params['registration_date_from'] = filters['registration_date_from']
+        if filters["registration_date_to"]:
+            date_to = datetime.datetime.strptime(filters["registration_date_to"], '%Y-%m-%d').date()
+            date_to_end_of_day = datetime.datetime.combine(date_to, datetime.time.max)
+            where_clauses.append("au.registration_date <= %(registration_date_to)s")
+            params['registration_date_to'] = date_to_end_of_day
+        
+        where_sql = " AND ".join(where_clauses)
+
         with conn.cursor() as cursor:
-            # 検索条件の組み立て
-            where_clauses = ["1=1"]
-            params = {}
-            if filters["user_id"]:
-                where_clauses.append("au.user_id LIKE %(user_id)s")
-                params['user_id'] = f"%{filters['user_id']}%"
-            if filters["account_id"]:
-                where_clauses.append("au.account_id LIKE %(account_id)s")
-                params['account_id'] = f"%{filters['account_id']}%"
-            if filters["shain_name"]:
-                where_clauses.append("ms.shain_name LIKE %(shain_name)s")
-                params['shain_name'] = f"%{filters['shain_name']}%"
-            if filters["role"]:
-                where_clauses.append("au.role = %(role)s")
-                params['role'] = filters['role']
-            if filters["login_enabled"]:
-                where_clauses.append("au.login_enabled = %(login_enabled)s")
-                params['login_enabled'] = filters['login_enabled']
-            if filters["registration_date_from"]:
-                where_clauses.append("au.registration_date >= %(registration_date_from)s")
-                params['registration_date_from'] = filters['registration_date_from']
-            if filters["registration_date_to"]:
-                date_to = datetime.datetime.strptime(filters["registration_date_to"], '%Y-%m-%d').date()
-                date_to_end_of_day = datetime.datetime.combine(date_to, datetime.time.max)
-                where_clauses.append("au.registration_date <= %(registration_date_to)s")
-                params['registration_date_to'] = date_to_end_of_day
-
-            where_sql = " AND ".join(where_clauses)
-
-            # 総件数を取得
-            count_sql = f"""
-                SELECT COUNT(*) as total 
-                FROM ms_auth_user AS au 
-                LEFT JOIN ms_shainlist AS ms ON au.shain_code = ms.shain_code
-                WHERE {where_sql}
-            """
+            # COUNTクエリの組み立てと実行
+            count_query_template = base_sql.replace("/*[LIMIT]*/", "").replace("/*[ORDER_BY]*/", "")
+            count_query = count_query_template.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+            count_sql = "SELECT COUNT(*) as total FROM (" + count_query.strip().rstrip(';') + ") AS count_table"
+            
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['total'] or 0
 
+            # 本体クエリの組み立てと実行
             if total > 0:
                 params_with_limit = params.copy()
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
-
-                with open('flaskapp/sql/auth/select_auth_user.sql', 'r', encoding='utf-8') as f:
-                    base_sql = f.read()
-
-                sql = f"{base_sql.strip().rstrip(';')} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
-                cursor.execute(sql, params_with_limit)
+                
+                main_sql = base_sql.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+                main_sql = main_sql.replace("/*[ORDER_BY]*/", order_by_sql)
+                main_sql = main_sql.replace("/*[LIMIT]*/", "LIMIT %(limit)s OFFSET %(offset)s")
+                
+                cursor.execute(main_sql, params_with_limit)
                 results = cursor.fetchall()
 
     except Exception as e:
-        error_message = f"データ取得中にエラーが発生しました: {e}"
+        error_message = f"処理中にエラーが発生しました: {e}"
+        flash(error_message, "danger")
         results = []
         total = 0
     finally:
         if conn:
             conn.close()
-
+            
     total_pages = (total + limit - 1) // limit if limit > 0 else 0
 
     return render_template(
@@ -157,9 +168,8 @@ def show_auth_userlist():
         selected_limit=str(limit),
         sort_by=sort_by,
         sort_order=sort_order,
-        error_message=error_message if 'error_message' in locals() else None
+        error_message=error_message
     )
-
 #
 # 新規登録機能
 #

@@ -1,6 +1,8 @@
+import os
 import datetime
 import json
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+import re
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flaskapp.utils.db import get_db_connection
 from flaskapp.common import constants
 from flaskapp.services.logging_service import log_action
@@ -30,6 +32,8 @@ def get_shain_field_labels():
 @shainlist_bp.route("/shainlist")
 def show_shainlist():
     """社員一覧の表示と検索を行う"""
+    error_message = None  # エラーメッセージを初期化
+    conn = None  # コネクションを初期化
     try:
         # 検索フィルターの値を取得
         filters = {
@@ -56,61 +60,75 @@ def show_shainlist():
         if sort_order not in ['asc', 'desc']: sort_order = 'asc'
         order_by_sql = f"ORDER BY {sort_by} {sort_order.upper()}"
 
+        # DB接続
         conn = get_db_connection()
         if not conn:
-            error_message = "データベースに接続できませんでした。"
-            return render_template("masters/shainlist.html", shains=[], total=0, page=page, limit=limit, total_pages=0, filters=filters, error_message=error_message)
+            raise Exception("データベースに接続できませんでした。")
 
+        # ここからがデータベース操作のメイン部分
         results = []
         total = 0
-        with conn.cursor() as cursor:
-            # 検索条件の組み立て
-            where_clauses = ["1=1"]
-            params = {}
-            if filters["shain_code"]:
-                where_clauses.append("shain_code LIKE %(shain_code)s")
-                params['shain_code'] = f"%{filters['shain_code']}%"
-            if filters["shain_name"]:
-                where_clauses.append("shain_name LIKE %(shain_name)s")
-                params['shain_name'] = f"%{filters['shain_name']}%"
-            if filters["shain_kana"]:
-                where_clauses.append("shain_kana LIKE %(shain_kana)s")
-                params['shain_kana'] = f"%{filters['shain_kana']}%"
-            if filters["registration_status"]:
-                where_clauses.append("registration_status = %(registration_status)s")
-                params['registration_status'] = filters['registration_status']
-            if filters["is_active"]:
-                where_clauses.append("is_active = %(is_active)s")
-                params['is_active'] = filters['is_active']
-            if filters["registration_date_from"]:
-                where_clauses.append("registration_date >= %(registration_date_from)s")
-                params['registration_date_from'] = filters['registration_date_from']
-            if filters["registration_date_to"]:
-                where_clauses.append("registration_date <= %(registration_date_to)s")
-                params['registration_date_to'] = filters['registration_date_to']
-            
-            where_sql = " AND ".join(where_clauses)
+        
+        # SQLファイルを安全に読み込む
+        try:
+            sql_file_path = os.path.join(current_app.root_path, 'sql/shains/select_shainlist.sql')
+            with open(sql_file_path, 'r', encoding='utf-8') as f:
+                base_sql = f.read()
+        except FileNotFoundError:
+            raise Exception("SQL定義ファイル(shainlist)が見つかりません。")
 
-            # 総件数を取得
-            count_sql = f"SELECT COUNT(*) as total FROM ms_shainlist WHERE {where_sql}"
+        # 検索条件の組み立て
+        where_clauses = ["1=1"]
+        params = {}
+        if filters["shain_code"]:
+            where_clauses.append("shain_code LIKE %(shain_code)s")
+            params['shain_code'] = f"%{filters['shain_code']}%"
+        if filters["shain_name"]:
+            where_clauses.append("shain_name LIKE %(shain_name)s")
+            params['shain_name'] = f"%{filters['shain_name']}%"
+        if filters["shain_kana"]:
+            where_clauses.append("shain_kana LIKE %(shain_kana)s")
+            params['shain_kana'] = f"%{filters['shain_kana']}%"
+        if filters["registration_status"]:
+            where_clauses.append("registration_status = %(registration_status)s")
+            params['registration_status'] = filters['registration_status']
+        if filters["is_active"]:
+            where_clauses.append("is_active = %(is_active)s")
+            params['is_active'] = filters['is_active']
+        if filters["registration_date_from"]:
+            where_clauses.append("registration_date >= %(registration_date_from)s")
+            params['registration_date_from'] = filters['registration_date_from']
+        if filters["registration_date_to"]:
+            where_clauses.append("registration_date <= %(registration_date_to)s")
+            params['registration_date_to'] = filters['registration_date_to']
+        
+        where_sql = " AND ".join(where_clauses)
+
+        with conn.cursor() as cursor:
+            # COUNTクエリの組み立てと実行
+            count_query_template = base_sql.replace("/*[LIMIT]*/", "").replace("/*[ORDER_BY]*/", "")
+            count_query = count_query_template.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+            count_sql = "SELECT COUNT(*) as total FROM (" + count_query.strip().rstrip(';') + ") AS count_table"
+            
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['total'] or 0
 
-            # 社員データを取得
+            # 本体クエリの組み立てと実行
             if total > 0:
                 params_with_limit = params.copy()
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
                 
-                with open('flaskapp/sql/shains/select_shainlist.sql', 'r', encoding='utf-8') as f:
-                    base_sql = f.read()
+                main_sql = base_sql.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+                main_sql = main_sql.replace("/*[ORDER_BY]*/", order_by_sql)
+                main_sql = main_sql.replace("/*[LIMIT]*/", "LIMIT %(limit)s OFFSET %(offset)s")
                 
-                sql = f"{base_sql.strip().rstrip(';')} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
-                cursor.execute(sql, params_with_limit)
+                cursor.execute(main_sql, params_with_limit)
                 results = cursor.fetchall()
 
     except Exception as e:
-        error_message = f"データ取得中にエラーが発生しました: {e}"
+        error_message = f"処理中にエラーが発生しました: {e}"
+        flash(error_message, "danger")
         results = []
         total = 0
     finally:
@@ -131,9 +149,8 @@ def show_shainlist():
         selected_limit=str(limit),
         sort_by=sort_by,
         sort_order=sort_order,
-        error_message=error_message if 'error_message' in locals() else None
+        error_message=error_message
     )
-
 #
 # 新規登録機能
 #

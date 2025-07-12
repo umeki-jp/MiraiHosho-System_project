@@ -8,3 +8,7 @@ SELECT
   registration_status
 FROM
   ms_shainlist
+/*[WHERE]*/
+/*[ORDER_BY]*/
+/*[LIMIT]*/
+;

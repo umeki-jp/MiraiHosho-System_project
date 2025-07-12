@@ -1,7 +1,8 @@
+import os
 import datetime
 import json
 import re
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from flaskapp.utils.db import get_db_connection
 from flaskapp.common import constants
 from flaskapp.services.logging_service import log_action
@@ -95,6 +96,16 @@ def show_agency_masterlist():
     results = []
     total = 0
     try:
+        # ▼▼▼ SQLファイルを安全に読み込む ▼▼▼
+        try:
+            sql_file_path = os.path.join(current_app.root_path, 'sql/agencies/select_agency_masterlist.sql')
+            with open(sql_file_path, 'r', encoding='utf-8') as f:
+                base_sql = f.read()
+        except FileNotFoundError:
+            flash("SQL定義ファイルが見つかりません。管理者にご連絡ください。", "danger")
+            return redirect(url_for('main.index')) # エラーページやトップページへ
+
+        # WHERE句の組み立て（この部分は元のコードと同じです）
         where_clauses = ["1=1"]
         params = {}
         if filters["agency_master_code"]:
@@ -107,18 +118,31 @@ def show_agency_masterlist():
             where_clauses.append("agency_master_name_kana LIKE %(agency_master_name_kana)s")
             params['agency_master_name_kana'] = f"%{filters['agency_master_name_kana']}%"
         if filters["address"]:
-            # 住所は都道府県・市区町村・番地をまとめて検索
             where_clauses.append("(agency_master_prefecture LIKE %(address)s OR agency_master_city LIKE %(address)s OR agency_master_address LIKE %(address)s)")
             params['address'] = f"%{filters['address']}%"
         if filters["contract_version"]:
             where_clauses.append("contract_version = %(contract_version)s")
             params['contract_version'] = filters['contract_version']
-        # 他のフィルター条件... (status, date)
-            
+        # registration_status と registration_date のフィルターもここに追加します
+        if filters["registration_status"]:
+            where_clauses.append("registration_status = %(registration_status)s")
+            params['registration_status'] = filters['registration_status']
+        if filters["registration_date_from"]:
+            where_clauses.append("registration_date >= %(registration_date_from)s")
+            params['registration_date_from'] = filters['registration_date_from']
+        if filters["registration_date_to"]:
+            where_clauses.append("registration_date <= %(registration_date_to)s")
+            params['registration_date_to'] = filters['registration_date_to']
+
         where_sql = " AND ".join(where_clauses)
-        
+
+        # ▼▼▼ プレースホルダーを置換してクエリを組み立てる ▼▼▼
         with conn.cursor() as cursor:
-            count_sql = f"SELECT COUNT(*) as total FROM ms03_agency_masterlist WHERE {where_sql}"
+            # COUNTクエリの組み立て
+            count_query_template = base_sql.replace("/*[LIMIT]*/", "").replace("/*[ORDER_BY]*/", "")
+            count_query = count_query_template.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+            count_sql = "SELECT COUNT(*) as total FROM (" + count_query.strip().rstrip(';') + ") AS count_table"
+            
             cursor.execute(count_sql, params)
             total = cursor.fetchone()['total'] or 0
 
@@ -127,11 +151,12 @@ def show_agency_masterlist():
                 params_with_limit['limit'] = limit
                 params_with_limit['offset'] = offset
                 
-                # TODO: SQLファイルを作成
-                base_sql = "SELECT * FROM ms03_agency_masterlist"
-                sql = f"{base_sql} WHERE {where_sql} {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
+                # 本体クエリの組み立て
+                main_sql = base_sql.replace("/*[WHERE]*/", f"WHERE {where_sql}")
+                main_sql = main_sql.replace("/*[ORDER_BY]*/", order_by_sql)
+                main_sql = main_sql.replace("/*[LIMIT]*/", "LIMIT %(limit)s OFFSET %(offset)s")
                 
-                cursor.execute(sql, params_with_limit)
+                cursor.execute(main_sql, params_with_limit)
                 results = cursor.fetchall()
 
     except Exception as e:

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% set page_title = "代理店支店一覧" %}
+
+{% block content %}
+
+  <div class="mb-4 d-flex justify-content-start">
+    <a href="{{ url_for('agency_sublist.agency_sub_new') }}"
+       class="btn btn-primary new-btn"
+       onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+      新規登録
+    </a>
+  </div>
+
+  {% import "ui/common_parts.html" as ui %}
+  {% import "ui/search_buttons.html" as sc %}
+
+  {# ▼▼▼ 表示項目とソートキーを代理店支店用に定義 ▼▼▼ #}
+  {% set th_list = [
+    {"class": "col-select", "label": "選択", "key": None},
+    {"class": "col-code", "label": "代理店支店cd", "key": "agency_code"},
+    {"class": "col-customer", "label": "代理店本社名", "key": "agency_master_name"},
+    {"class": "col-customer", "label": "代理店支店名", "key": "sub_name"},
+    {"class": "col-customer", "label": "本社名ｶﾅ", "key": "agency_master_name_kana"},
+    {"class": "col-customer", "label": "支店名ｶﾅ", "key": "sub_name_kana"},
+    {"class": "col-status", "label": "登録状況", "key": "registration_status"},
+    {"class": "col-date", "label": "登録日", "key": "registration_date"}
+  ] %}
+  {% set colspan = th_list | length %}
+
+  <form method="get" action="{{ url_for('agency_sublist.show_agency_sublist') }}" class="mb-4 p-3 border rounded bg-light">
+    <div class="row g-3">
+      {# ▼▼▼ 検索項目を代理店支店用に変更 ▼▼▼ #}
+      <div class="col-md-4">
+        {{ ui.search_input("代理店支店cd", "agency_code", filters.agency_code or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("代理店本社名", "agency_master_name", filters.agency_master_name or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("本社名ｶﾅ", "agency_master_name_kana", filters.agency_master_name_kana or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("代理店支店名", "sub_name", filters.sub_name or "") }}
+      </div>
+      <div class="col-md-4">
+        {{ ui.search_input("支店名ｶﾅ", "sub_name_kana", filters.sub_name_kana or "") }}
+      </div>
+       <div class="col-md-4">
+        {{ ui.search_input("住所", "address", filters.address or "") }}
+      </div>
+       <div class="col-md-4">
+        {{ ui.search_input("電話番号", "tel", filters.tel or "") }}
+      </div>
+      <div class="col-md-4">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">登録状況</span>
+          <select name="registration_status" id="registration_status" class="form-select">
+            <option value="">すべて</option>
+            {% for key, value in registration_status.items() %}
+              <option value="{{ key }}" {% if filters.registration_status == key|string %}selected{% endif %}>
+                {{ value }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text">登録日</span>
+            <input type="date" name="registration_date_from" value="{{ filters.registration_date_from or '' }}" class="form-control" style="max-width: 150px;">
+            <span class="input-group-text">～</span>
+            <input type="date" name="registration_date_to" value="{{ filters.registration_date_to or '' }}" class="form-control" style="max-width: 150px;">
+        </div>
+      </div>
+    </div>
+    {# ▼▼▼ search_buttonsのURLを支店用に変更 ▼▼▼ #}
+    {{ sc.search_buttons(url_for('agency_sublist.show_agency_sublist'), limit, page, total_pages, total) }}
+  </form>
+
+  <div class="table-container">
+    <table class="table table-bordered list-table">
+        <thead>
+            <tr>
+                {% set base_query_params = request.args.to_dict() %}
+                {% set _ = base_query_params.pop('sort_by', None) %}
+                {% set _ = base_query_params.pop('sort_order', None) %}
+                {% set _ = base_query_params.pop('page', None) %}
+                {% set base_query_string = base_query_params|urlencode %}
+                {% for th in th_list %}
+                    <th class="{{ th.class }}">
+                        {% if th.key %}
+                            {# ソート機能 #}
+                            {% if sort_by == th.key and sort_order == 'asc' %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=desc">{{ th.label }} <span class="sort-indicator">▲</span></a>
+                            {% elif sort_by == th.key and sort_order == 'desc' %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">{{ th.label }} <span class="sort-indicator">▼</span></a>
+                            {% else %}
+                                <a href="?{{ base_query_string }}&sort_by={{ th.key }}&sort_order=asc">{{ th.label }}</a>
+                            {% endif %}
+                        {% else %}
+                            {{ th.label }}
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {# ▼▼▼ ループ変数と表示データを支店用に変更 ▼▼▼ #}
+            {% if sub_agencies %}
+                {% for sub_a in sub_agencies %}
+                    <tr>
+                        <td class="col-select">
+                            <a href="{{ url_for('agency_sublist.agency_sub_edit', agency_id=sub_a.agency_id) }}"
+                            class="select-link"
+                            onclick="window.open(this.href, '_blank', 'width=1200,height=800'); return false;">
+                            選択
+                        </a>
+                        </td>
+                        <td class="col-code">{{ sub_a.agency_code or '' }}</td>
+                        <td class="col-customer">{{ sub_a.agency_master_name or '' }}</td>
+                        <td class="col-customer">{{ sub_a.sub_name or '' }}</td>
+                        <td class="col-customer">{{ sub_a.agency_master_name_kana or '' }}</td>
+                        <td class="col-customer">{{ sub_a.sub_name_kana or '' }}</td>
+                        <td class="col-status">{{ registration_status.get(sub_a.registration_status, '不明') }}</td>
+                        <td class="col-date">{{ sub_a.registration_date.strftime('%Y-%m-%d') if sub_a.registration_date else '' }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ colspan }}" class="text-center text-muted">
+                        該当する代理店支店がありません。
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+  </div>
+{% endblock %}
